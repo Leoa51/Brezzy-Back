@@ -5,7 +5,7 @@ CREATE TABLE "User" (
     "username" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "lastname" TEXT NOT NULL,
-    "mail" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "bio" VARCHAR(500) NOT NULL DEFAULT '',
     "pdp" TEXT NOT NULL DEFAULT '',
@@ -104,7 +104,7 @@ CREATE TABLE "_UserTags" (
 CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_mail_key" ON "User"("mail");
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Follow_followerId_followingId_key" ON "Follow"("followerId", "followingId");
