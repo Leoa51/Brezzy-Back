@@ -12,7 +12,6 @@ const app = express();
 // Définition du port sur lequel le serveur écoutera les requêtes
 const port = process.env.API_PORT
 app.use(express.json());
-console.log("test : " + JSON.stringify(process.env, null, 2));
 app.use('/api/tasks', require('./routes/tasks.route'));
 
 // Définition d'une route GET pour la racine du site ('/')
