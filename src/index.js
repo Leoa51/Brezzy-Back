@@ -10,10 +10,9 @@ require('dotenv').config();
 const app = express();
 
 // Définition du port sur lequel le serveur écoutera les requêtes
-const port = 3000;
-
+const port = process.env.API_PORT
 app.use(express.json());
-
+console.log("test : " + JSON.stringify(process.env, null, 2));
 app.use('/api/tasks', require('./routes/tasks.route'));
 
 // Définition d'une route GET pour la racine du site ('/')
@@ -25,7 +24,7 @@ app.get('/', (req, res) => {
 
 mongoose
     // .connect("mongodb://" + process.env.MONGO_HOST + ":" + process.env.MONGO_PORT + "/" + process.env.MONGO_DATABASE_NAME)
-    .connect(process.env.MONGO_URI)
+    .connect(`mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_NAME}?authSource=admin`)
     .then(() => {
         // Affiche un message de succès lorsque la connexion est établie.
         console.log("MongoDB connected !");

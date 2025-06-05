@@ -69,7 +69,7 @@ services:
   api-1:
     build:
       context: .
-      dockerfile: DockerFile.api
+      dockerfile: docker/DockerFile.api
     restart: always
     container_name: api-1
     ports:
@@ -78,29 +78,12 @@ services:
       - mongodb
       - postegredb
     environment:
-      MONGO_URL: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:${MONGO_PORT}/${MONGO_NAME}?authSource=admin
       POSTGRES_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-!ChangeMe!}@database:${POSTGRES_PORT}/${POSTGRES_DB:-app}?serverVersion=${POSTGRES_VERSION:-17}&charset=${POSTGRES_CHARSET:-utf8}
     networks:
       - app
       - db
-
-  api-2:
-    build:
-      context: .
-      dockerfile: DockerFile.api
-    restart: always
-    container_name: api-2
-    ports:
-      - "3001:3000"
-    depends_on:
-      - mongodb
-      - postegredb
-    environment:
-      MONGO_URL: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:${MONGO_PORT}/${MONGO_NAME}?authSource=admin
-      POSTGRES_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-!ChangeMe!}@database:${POSTGRES_PORT}/${POSTGRES_DB:-app}?serverVersion=${POSTGRES_VERSION:-17}&charset=${POSTGRES_CHARSET:-utf8}
-    networks:
-      - app
-      - db
+    env_file:
+      - .env
 
 networks:
   app:
