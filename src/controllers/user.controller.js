@@ -1,26 +1,26 @@
 // Initialisation d'un tableau vide pour stocker les tâches.
-const tasksList = [];
+const usersList = [];
 
 
-const Task = require('../models/tasks.model.js');
+const User = require('../models/user.model.js');
 
 module.exports = {
     // Fonction asynchrone pour créer une nouvelle tâche.
-    createTask: async (req, res) => {
+    createUser: async (req, res) => {
         // Extraction des données de la requête : titre et contenu de la tâche.
-        const { title, content } = req.body;
+        const { role, username, name, mail, password, bio, pp, language } = req.body;
 
         // Vérification que le titre et le contenu sont présents.
         // Si l'un des deux est manquant, on retourne une réponse avec un statut 400 (Bad Request).
-        if (!title || !content) return res.status(400).send("Title and content are required");
+        if (!role || !username || !name || !mail || !password || !bio || !pp || !language) return res.status(400).send("Title and content are required");
 
         try {
             // Création et sauvegarde d'une nouvelle tâche dans la base de données
-            const newTask = new Task({ title, content });
-            await newTask.save();
+            const newUser = new User({ role, username, name, mail, password, bio, pp, language });
+            await newUser.save();
 
             // Envoi d'une réponse avec un statut 201 (Created) pour indiquer que la tâche a été créée avec succès.
-            res.status(201).send("Task created successfully");
+            res.status(201).send("User created successfully");
         } catch (err) {
             // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
             // et l'erreur sous forme de JSON.
@@ -31,11 +31,11 @@ module.exports = {
 
 
     // Fonction asynchrone pour récupérer toutes les tâches.
-    getAllTasks: async (req, res) => {
+    getAllUsers: async (req, res) => {
         try {
             // Récupération de toutes les tâches depuis la base de données
-            const tasks = await Task.find();
-            res.status(200).json(tasks);
+            const users = await User.find();
+            res.status(200).json(users);
         } catch (err) {
             // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
             // et l'erreur sous forme de JSON.
@@ -44,11 +44,11 @@ module.exports = {
     },
 
 
-    deleteTask: async (req, res) => {
+    deleteUser: async (req, res) => {
         try {
             // Récupération de toutes les tâches depuis la base de données
-            const tasks = await Task.findByIdAndDelete(req.params.id);
-            res.status(200).json(tasks);
+            const users = await User.findByIdAndDelete(req.params.id);
+            res.status(200).json(users);
         } catch (err) {
             // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
             // et l'erreur sous forme de JSON.
@@ -56,11 +56,11 @@ module.exports = {
         }
     },
 
-    getTaskById: async (req, res) => {
+    getUserById: async (req, res) => {
         try {
             // Récupération de toutes les tâches depuis la base de données
-            const tasks = await Task.findById(req.params.id);
-            res.status(200).json(tasks);
+            const users = await User.findById(req.params.id);
+            res.status(200).json(users);
         } catch (err) {
             // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
             // et l'erreur sous forme de JSON.
@@ -68,11 +68,11 @@ module.exports = {
         }
     },
 
-    modifyTask: async (req, res) => {
+    modifyUser: async (req, res) => {
         try {
             // Récupération de toutes les tâches depuis la base de données
-            const tasks = await Task.findByIdAndUpdate(req.params.id, req.body);
-            res.status(200).json(tasks);
+            const users = await User.findByIdAndUpdate(req.params.id, req.body);
+            res.status(200).json(users);
         } catch (err) {
             // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
             // et l'erreur sous forme de JSON.

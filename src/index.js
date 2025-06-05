@@ -15,6 +15,10 @@ const port = 3000;
 app.use(express.json());
 
 app.use('/api/tasks', require('./routes/tasks.route'));
+app.use('/api/tags', require('./routes/tag.route'));
+app.use('/api/posts', require('./routes/post.route'));
+app.use('/api/users', require('./routes/user.route'));
+app.use('/api/conversations', require('./routes/conversation.route'));
 
 // Définition d'une route GET pour la racine du site ('/')
 // Lorsque quelqu'un accède à cette route, une réponse "Hello World!" est envoyée
@@ -40,26 +44,7 @@ mongoose
         console.log(err);
     });
 
-// mongoose
-//     .connect(process.env.MONGO_URI, {
-//         // Options recommandées pour MongoDB Atlas
-//         useNewUrlParser: true,
-//         useUnifiedTopology: true,
-//     })
-//     .then(() => {
-//         console.log("✅ MongoDB Atlas connected successfully!");
-//         console.log(`📊 Database: ${mongoose.connection.name}`);
-//
-//         // Démarre l'application seulement après connexion réussie
-//         app.listen(port, () => {
-//             console.log(`🚀 Server running on port ${port}`);
-//             console.log(`📅 Started at: ${new Date().toISOString()}`);
-//         });
-//     })
-//     .catch((err) => {
-//         console.error("❌ MongoDB connection error:", err.message);
-//         process.exit(1); // Arrête l'application si pas de connexion DB
-//     });
+
 
 // Lancement du serveur pour écouter les requêtes sur le port spécifié
 // Lorsque le serveur démarre, un message est affiché dans la console

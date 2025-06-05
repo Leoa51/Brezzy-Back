@@ -4,26 +4,26 @@ const express = require('express');
 // Création d'une nouvelle instance de Router pour définir les routes
 const router = express.Router();
 
-// Importe le contrôleur des tâches depuis le fichier tasks.controller.js
-const tasksController = require('../controllers/tasks.controller.js');
+// Importe le contrôleur des tâches depuis le fichier posts.controller.js
+const postsController = require('../controllers/post.controller.js');
 
 const requiredFields = require('../middlewares/requiredFields.middleware.js');
 
-router.post('/', requiredFields(['title', 'content']), tasksController.createTask);
+router.post('/', requiredFields(['message', 'author']), postsController.createPost);
 
 // Définition d'une route POST pour la racine du routeur
-router.post('/', tasksController.createTask);
+router.post('/', postsController.createPost);
 
 // Définition d'une route GET pour obtenir toutes les tâches
-router.get('/', tasksController.getAllTasks);
+router.get('/', postsController.getAllPosts);
 
 // Définition d'une route GET pour obtenir une tâche par son ID
-router.get('/:id', tasksController.getTaskById);
+router.get('/:id', postsController.getPostById);
 
-router.patch('/:id', tasksController.modifyTask);
+router.patch('/:id', postsController.modifyPost);
 
 // Définition d'une route DELETE pour supprimer une tâche par son ID
-router.delete('/:id', tasksController.deleteTask);
+router.delete('/:id', postsController.deletePost);
 
 
 
