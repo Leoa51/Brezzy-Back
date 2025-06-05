@@ -4,6 +4,7 @@ CREATE TABLE "User" (
     "role" TEXT NOT NULL DEFAULT 'user',
     "username" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "lastname" TEXT NOT NULL,
     "mail" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "bio" VARCHAR(500) NOT NULL DEFAULT '',
