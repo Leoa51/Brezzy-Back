@@ -1,6 +1,5 @@
 generator client {
   provider      = "prisma-client-js"
-  output        = "../src/prisma/client"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
@@ -15,7 +14,7 @@ model User {
   username  String   @unique
   name      String
   lastname  String
-  mail      String   @unique
+  email     String   @unique
   password  String
   bio       String   @default("") @db.VarChar(500)
   pdp       String   @default("")
