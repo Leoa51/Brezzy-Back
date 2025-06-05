@@ -7,6 +7,8 @@ WORKDIR /usr/src/app
 COPY /package*.json ./
 # Install dependencies
 RUN npm install --legacy-peer-deps
+
+RUN npx prisma migrate dev --name init
 COPY . .
 
 EXPOSE 3000
