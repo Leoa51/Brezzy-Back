@@ -1,5 +1,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import authMiddleware from './middleware/authMiddleware.js';
 //import tasksController from './controllers/tasks.controller.js';
 import dotenv from 'dotenv';
 import { authRouter } from './routes/auth.route.js';
@@ -21,6 +22,9 @@ app.use(express.json());
 
 app.use('/api', authRouter)
 // Définition d'une route GET pour la racine du site ('/')
+
+
+app.use(authMiddleware);
 // Lorsque quelqu'un accède à cette route, une réponse "Hello World!" est envoyée
 app.get('/', (req, res) => {
     res.send('Hello World!');
