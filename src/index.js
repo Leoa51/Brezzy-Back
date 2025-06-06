@@ -1,9 +1,8 @@
 import express from 'express';
 import mongoose from 'mongoose';
-import register from './controllers/auth/registerController.js';
 //import tasksController from './controllers/tasks.controller.js';
 import dotenv from 'dotenv';
-import { body } from 'express-validator';
+import { authRouter } from './routes/auth.route.js';
 
 dotenv.config();
 // Création d'une instance de l'application Express
@@ -20,13 +19,7 @@ const port = process.env.API_PORT
 app.use(express.json());
 //app.use('/api/tasks', tasksController.getAllTasks); TODO:FIX by using prisma not mongoose
 
-app.post('/api/register',
-    body('email').isEmail().withMessage('Enter a valid email'),
-    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters long'),
-    (req, res) => {
-        register(req, res)
-    }
-);
+app.use('/api', authRouter)
 // Définition d'une route GET pour la racine du site ('/')
 // Lorsque quelqu'un accède à cette route, une réponse "Hello World!" est envoyée
 app.get('/', (req, res) => {
