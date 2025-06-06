@@ -11,6 +11,11 @@ export default async function (req, res) {
                 email: email.toLowerCase(),
             }
         });
+        // check if user is banned 
+        if (user && user.isBlocked) {
+            return res.status(403).json({ message: 'User is banned' });
+        }
+
         if (!user) return res.status(400).json({ message: 'Invalid credentials' });
 
         const isMatch = await bcrypt.compare(password, user.password);
