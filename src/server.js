@@ -4,6 +4,8 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { Server as socketIO } from 'socket.io';
 import { webSocketAuth } from './middleware/WebSocketAuth.js';
+
+import Conversation from './models/conversation.model.js';
 dotenv.config();
 
 const app = express();
@@ -33,7 +35,7 @@ const io = new Server(server, {
     },
 });
 
-socketAuthMiddleware(io);
+webSocketAuth(io);
 
 
 io.on('connection', (socket) => {
@@ -43,44 +45,64 @@ io.on('connection', (socket) => {
     const userId = socket.userId;
     usersSocketIds[userId] = socket.id;
     console.log(`User ${userId} connected with socket ID ${socket.id}`);
-});
 
 
-socket.on('disconnect', () => {
-    //remove userId from usersSocketIds
-    const userId = socket.userId;
-    delete usersSocketIds[userId];
+    socket.on('disconnect', () => {
+        //remove userId from usersSocketIds
+        const userId = socket.userId;
+        delete usersSocketIds[userId];
 
-    console.log('User disconnected');
-});
+        console.log('User disconnected');
+    });
 
 
-io.on('message', (message, convId) => {
-    //find conversation by convId
-    console.log(`Message received: ${message} in conversation ${convId}`);
-    mongoose.model('Conversation').findById(convId)
-        .then(conversation => {
+    socket.on('message', async (data) => {
+        const { convId, content, pictureUrl, videoUrl } = data;
+        const author = socket.userId;
+
+        if (!convId || !content || !author) {
+            console.error('Missing data to send message');
+            return;
+        }
+
+        try {
+            const conversation = await Conversation.findById(convId);
+
             if (!conversation) {
-                console.error(`Conversation with id ${convId} not found`);
+                console.error(`Conversation with ID ${convId} not found`);
                 return;
             }
 
-            // Get all userIds from the conversation
-            const userIds = conversation.users.map(user => user.userId);
-            console.log(`Users in conversation ${convId}: ${userIds}`);
+            const newMessage = {
+                author,
+                content,
+                pictureUrl: pictureUrl || '',
+                videoUrl: videoUrl || '',
+                isRead: false,
+                sentAt: new Date()
+            };
 
-            // Emit the message to all users in the conversation
+            conversation.messages.push(newMessage);
+
+            await conversation.save();
+
+            const userIds = conversation.participants.map(p => p.toString());
+
             userIds.forEach(userId => {
                 if (usersSocketIds[userId]) {
-                    io.to(usersSocketIds[userId]).emit('message', { message, convId });
+                    io.to(usersSocketIds[userId]).emit('message', {
+                        convId,
+                        message: newMessage
+                    });
                 }
             });
-        })
-        .catch(err => {
-            console.error(`Error finding conversation: ${err}`);
-        });
-
-    //emit the message to all userId from the conversation
-
-    io.emit('message', { message, convId });
+        } catch (err) {
+            console.error(`Error handling message: ${err.message}`);
+        }
+    });
 });
+
+
+
+
+
