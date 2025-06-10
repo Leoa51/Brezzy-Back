@@ -1,0 +1,225 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User_ {
+  id           String         @id @default(cuid())
+  name         String
+  email        String         @unique
+  passwordHash String         @map("password_hash")
+  bio          String?
+  ppPath       String?        @map("pp_path")
+  username     String         @unique
+  language     String?
+  isBlocked    Boolean        @default(false) @map("is_blocked")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  tagAssocs    Asso11[]
+  comments     CommentPost[]
+  followers    Follow[]       @relation("FollowedUser")
+  following    Follow[]       @relation("FollowerUser")
+  images       Image[]
+  likes        LikePost[]
+  participants Participants[]
+  posts        Post[]
+  reports      ReportPost[]
+  userReports  ReportUser[]   @relation("ReportedUser")
+  reportsMade  ReportUser[]   @relation("ReporterUser")
+  videos       Video[]
+  linkImages   LinkImg[]
+  linkVideos   LinkVid[]
+  publications Publish[]
+
+  @@map("User_1")
+}
+
+model Post {
+  id           String        @id @default(cuid())
+  author       String
+  message      String
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  tags         Asso11[]
+  comments     CommentPost[]
+  likes        LikePost[]
+  user         User_         @relation(fields: [author], references: [id], onDelete: Cascade)
+  reports      ReportPost[]
+  linkImages   LinkImg[]
+  linkVideos   LinkVid[]
+  publications Publish[]
+
+  @@map("Post_1")
+}
+
+model CommentPost {
+  id         String   @id @default(cuid())
+  author     String
+  idPost     String   @map("ID_1")
+  authorPost String   @map("author_1")
+  content    String
+  createdAt  DateTime @default(now()) @map("created_at")
+  post       Post     @relation(fields: [idPost], references: [id], onDelete: Cascade)
+  user       User_    @relation(fields: [author], references: [id], onDelete: Cascade)
+
+  @@map("Comment_post_1")
+}
+
+model LikePost {
+  id        String   @id @default(cuid())
+  idPost    String   @map("ID_1")
+  author    String
+  createdAt DateTime @default(now()) @map("created_at")
+  post      Post     @relation(fields: [idPost], references: [id], onDelete: Cascade)
+  user      User_    @relation(fields: [author], references: [id], onDelete: Cascade)
+
+  @@unique([idPost, author])
+  @@map("Like_post_1")
+}
+
+model ReportPost {
+  id        String   @id @default(cuid())
+  idPost    String   @map("ID_1")
+  author    String
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  post      Post     @relation(fields: [idPost], references: [id], onDelete: Cascade)
+  user      User_    @relation(fields: [author], references: [id], onDelete: Cascade)
+
+  @@map("Report_post_1")
+}
+
+model ReportUser {
+  id           String   @id @default(cuid())
+  reportedId   String   @map("id_1")
+  reporterId   String   @map("reporter_id")
+  reason       String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  reportedUser User_    @relation("ReportedUser", fields: [reportedId], references: [id], onDelete: Cascade)
+  reporterUser User_    @relation("ReporterUser", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@unique([reportedId, reporterId])
+  @@map("Report_user_1")
+}
+
+model Follow {
+  id         String   @id @default(cuid())
+  followerId String   @map("id_1")
+  followedId String   @map("followed_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  followed   User_    @relation("FollowedUser", fields: [followedId], references: [id], onDelete: Cascade)
+  follower   User_    @relation("FollowerUser", fields: [followerId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followedId])
+  @@map("Follow_1")
+}
+
+model Publish {
+  id        String   @id @default(cuid())
+  idPost    String   @map("ID_1")
+  author    String
+  createdAt DateTime @default(now()) @map("created_at")
+  post      Post     @relation(fields: [idPost], references: [id], onDelete: Cascade)
+  user      User_    @relation(fields: [author], references: [id], onDelete: Cascade)
+
+  @@map("publish_1")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  idTag     String   @unique @map("id_tag")
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  posts     Asso11[]
+
+  @@map("tag_1")
+}
+
+model Asso11 {
+  id     String @id @default(cuid())
+  idTag  String @map("id_tag")
+  idPost String @map("ID")
+  author String
+  post   Post   @relation(fields: [idPost], references: [id], onDelete: Cascade)
+  user   User_  @relation(fields: [author], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
+
+  @@unique([idTag, idPost])
+  @@map("Asso_11_1")
+}
+
+model Image {
+  id         String    @id @default(cuid())
+  cdnPath    String    @map("cdn_path")
+  author     String
+  createdAt  DateTime  @default(now()) @map("created_at")
+  user       User_     @relation(fields: [author], references: [id], onDelete: Cascade)
+  linkImages LinkImg[]
+
+  @@map("Image_1")
+}
+
+model Video {
+  id         String    @id @default(cuid())
+  cdnPath    String    @map("cdn_path")
+  author     String
+  createdAt  DateTime  @default(now()) @map("created_at")
+  user       User_     @relation(fields: [author], references: [id], onDelete: Cascade)
+  linkVideos LinkVid[]
+
+  @@map("Video_1")
+}
+
+model LinkImg {
+  id         String   @id @default(cuid())
+  imageId    String   @map("ID")
+  postAuthor String   @map("author")
+  linkAuthor String   @map("id_1")
+  createdAt  DateTime @default(now()) @map("created_at")
+  image      Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  post       Post     @relation(fields: [postAuthor], references: [id], onDelete: Cascade)
+  user       User_    @relation(fields: [linkAuthor], references: [id], onDelete: Cascade)
+
+  @@unique([imageId, postAuthor])
+  @@map("link_img_1")
+}
+
+model LinkVid {
+  id         String   @id @default(cuid())
+  videoId    String   @map("ID")
+  postAuthor String   @map("author")
+  linkAuthor String   @map("id_1")
+  createdAt  DateTime @default(now()) @map("created_at")
+  video      Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  post       Post     @relation(fields: [postAuthor], references: [id], onDelete: Cascade)
+  user       User_    @relation(fields: [linkAuthor], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, postAuthor])
+  @@map("link_vid_1")
+}
+
+model Conversation {
+  id           String         @id @default(cuid())
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  participants Participants[]
+
+  @@map("Conversation_1")
+}
+
+model Participants {
+  id             String       @id @default(cuid())
+  conversationId String       @map("conversation_id")
+  userId1        String       @map("id_1")
+  userId2        String       @map("id_2")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User_        @relation(fields: [userId1], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId1])
+  @@map("Participants_1")
+}
