@@ -10,7 +10,7 @@ const usersController = require('../controllers/user.controller.js');
 const requiredFields = require('../middlewares/requiredFields.middleware.js');
 
 // Définition d'une route POST pour créer un nouvel utilisateur avec les champs obligatoires
-router.post('/', requiredFields(['role', 'username', 'name', 'mail', 'password', 'bio', 'pp', 'language']), usersController.createUser);
+router.post('/', requiredFields(['role', 'username', 'name', 'email', 'password', 'bio', 'ppPath', 'language']), usersController.createUser);
 
 // Définition d'une route GET pour obtenir tous les utilisateurs
 router.get('/', usersController.getAllUsers);
