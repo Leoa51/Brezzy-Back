@@ -2,11 +2,9 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 module.exports = {
-    // Fonction pour créer un nouveau tag
     createTag: async (req, res) => {
         const { idTag, name } = req.body;
 
-        // Vérification des champs obligatoires
         if (!idTag || !name) {
             return res.status(400).json({
                 error: "idTag and name are required"
@@ -14,7 +12,6 @@ module.exports = {
         }
 
         try {
-            // Vérifier si le tag existe déjà
             const existingTag = await prisma.tag.findFirst({
                 where: {
                     OR: [
@@ -30,7 +27,6 @@ module.exports = {
                 });
             }
 
-            // Créer le nouveau tag
             const newTag = await prisma.tag.create({
                 data: {
                     idTag,
@@ -58,13 +54,11 @@ module.exports = {
         }
     },
 
-    // Fonction pour récupérer tous les tags
     getAllTags: async (req, res) => {
         try {
             const { page = 1, limit = 20, search = '', sortBy = 'popularity' } = req.query;
             const skip = (page - 1) * limit;
 
-            // Construire le filtre de recherche
             const where = search ? {
                 OR: [
                     { idTag: { contains: search, mode: 'insensitive' } },
@@ -72,7 +66,6 @@ module.exports = {
                 ]
             } : {};
 
-            // Définir l'ordre de tri
             let orderBy = {};
             switch (sortBy) {
                 case 'popularity':
@@ -122,7 +115,6 @@ module.exports = {
         }
     },
 
-    // Fonction pour récupérer un tag par ID
     getTagById: async (req, res) => {
         try {
             const tagId = req.params.id;
@@ -181,7 +173,6 @@ module.exports = {
         }
     },
 
-    // Fonction pour récupérer un tag par idTag
     getTagByIdTag: async (req, res) => {
         try {
             const { idTag } = req.params;
@@ -240,13 +231,11 @@ module.exports = {
         }
     },
 
-    // Fonction pour modifier un tag
     modifyTag: async (req, res) => {
         try {
             const tagId = req.params.id;
             const { idTag, name } = req.body;
 
-            // Vérifier que le tag existe
             const existingTag = await prisma.tag.findUnique({
                 where: { id: tagId }
             });
@@ -257,10 +246,8 @@ module.exports = {
                 });
             }
 
-            // Préparer les données à mettre à jour
             const updateData = {};
 
-            // Vérifier l'unicité de l'idTag si il est modifié
             if (idTag && idTag !== existingTag.idTag) {
                 const idTagExists = await prisma.tag.findUnique({
                     where: { idTag: idTag }
@@ -273,7 +260,6 @@ module.exports = {
                 updateData.idTag = idTag;
             }
 
-            // Vérifier l'unicité du nom si il est modifié
             if (name && name !== existingTag.name) {
                 const nameExists = await prisma.tag.findFirst({
                     where: {
@@ -289,14 +275,12 @@ module.exports = {
                 updateData.name = name;
             }
 
-            // Vérifier qu'il y a au moins un champ à mettre à jour
             if (Object.keys(updateData).length === 0) {
                 return res.status(400).json({
                     error: "No fields to update"
                 });
             }
 
-            // Mettre à jour le tag
             const updatedTag = await prisma.tag.update({
                 where: { id: tagId },
                 data: updateData,
@@ -322,12 +306,10 @@ module.exports = {
         }
     },
 
-    // Fonction pour supprimer un tag
     deleteTag: async (req, res) => {
         try {
             const tagId = req.params.id;
 
-            // Vérifier que le tag existe
             const existingTag = await prisma.tag.findUnique({
                 where: { id: tagId },
                 include: {
@@ -345,7 +327,6 @@ module.exports = {
                 });
             }
 
-            // Optionnel : Avertir si le tag est utilisé dans des posts
             if (existingTag._count.posts > 0) {
                 const { force } = req.query;
                 if (!force) {
@@ -356,7 +337,6 @@ module.exports = {
                 }
             }
 
-            // Supprimer le tag (les associations seront supprimées automatiquement)
             await prisma.tag.delete({
                 where: { id: tagId }
             });
@@ -379,19 +359,16 @@ module.exports = {
         }
     },
 
-    // Fonction pour associer un tag à un post
     addTagToPost: async (req, res) => {
         try {
             const { tagId, postId, authorId } = req.body;
 
-            // Vérifications des champs obligatoires
             if (!tagId || !postId || !authorId) {
                 return res.status(400).json({
                     error: "tagId, postId and authorId are required"
                 });
             }
 
-            // Vérifier que le tag existe
             const tag = await prisma.tag.findUnique({
                 where: { idTag: tagId }
             });
@@ -402,7 +379,6 @@ module.exports = {
                 });
             }
 
-            // Vérifier que le post existe
             const post = await prisma.post.findUnique({
                 where: { id: postId }
             });
@@ -413,7 +389,6 @@ module.exports = {
                 });
             }
 
-            // Vérifier que l'utilisateur existe
             const user = await prisma.user_.findUnique({
                 where: { id: authorId }
             });
@@ -424,7 +399,6 @@ module.exports = {
                 });
             }
 
-            // Vérifier si l'association existe déjà
             const existingAssociation = await prisma.asso11.findUnique({
                 where: {
                     idTag_idPost: {
@@ -440,7 +414,6 @@ module.exports = {
                 });
             }
 
-            // Créer l'association
             const newAssociation = await prisma.asso11.create({
                 data: {
                     idTag: tagId,
@@ -472,7 +445,6 @@ module.exports = {
         }
     },
 
-    // Fonction pour retirer un tag d'un post
     removeTagFromPost: async (req, res) => {
         try {
             const { tagId, postId } = req.params;
@@ -493,7 +465,6 @@ module.exports = {
                 });
             }
 
-            // Supprimer l'association
             await prisma.asso11.delete({
                 where: {
                     idTag_idPost: {
@@ -515,12 +486,10 @@ module.exports = {
         }
     },
 
-    // Fonction pour récupérer les tags les plus populaires
     getTrendingTags: async (req, res) => {
         try {
             const { limit = 10, timeframe = 'all' } = req.query;
 
-            // Définir la période de temps
             let dateFilter = {};
             const now = new Date();
 
@@ -587,7 +556,6 @@ module.exports = {
         }
     },
 
-    // Fonction pour rechercher des tags
     searchTags: async (req, res) => {
         try {
             const { q, limit = 10 } = req.query;
@@ -634,7 +602,6 @@ module.exports = {
         }
     },
 
-    // Fonction pour récupérer les statistiques des tags
     getTagStats: async (req, res) => {
         try {
             const totalTags = await prisma.tag.count();

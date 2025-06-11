@@ -1,14 +1,11 @@
 const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcrypt'); // Pour hasher les mots de passe
+const bcrypt = require('bcrypt');
 const prisma = new PrismaClient();
 
 module.exports = {
-    // Fonction asynchrone pour créer un nouvel utilisateur
     createUser: async (req, res) => {
-        // Extraction des données de la requête
         const { username, name, email, password, bio, ppPath, language } = req.body;
 
-        // Vérification des champs obligatoires
         if (!username || !name || !email || !password) {
             return res.status(400).json({
                 error: "Username, name, email and password are required"
@@ -16,7 +13,6 @@ module.exports = {
         }
 
         try {
-            // Vérifier si l'utilisateur existe déjà (email ou username)
             const existingUser = await prisma.user_.findFirst({
                 where: {
                     OR: [
@@ -36,7 +32,6 @@ module.exports = {
             const saltRounds = 10;
             const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-            // Création d'un nouvel utilisateur dans la base de données
             const newUser = await prisma.user_.create({
                 data: {
                     username,
@@ -59,7 +54,6 @@ module.exports = {
                     isBlocked: true,
                     createdAt: true,
                     updatedAt: true
-                    // Exclu passwordHash pour la sécurité
                 }
             });
 
@@ -76,13 +70,11 @@ module.exports = {
         }
     },
 
-    // Fonction asynchrone pour récupérer tous les utilisateurs
     getAllUsers: async (req, res) => {
         try {
             const { page = 1, limit = 10, search = '' } = req.query;
             const skip = (page - 1) * limit;
 
-            // Construire le filtre de recherche
             const where = search ? {
                 OR: [
                     { username: { contains: search, mode: 'insensitive' } },
@@ -91,7 +83,6 @@ module.exports = {
                 ]
             } : {};
 
-            // Récupération de tous les utilisateurs avec pagination
             const users = await prisma.user_.findMany({
                 where,
                 select: {
@@ -120,7 +111,6 @@ module.exports = {
                 take: parseInt(limit)
             });
 
-            // Compter le total pour la pagination
             const totalUsers = await prisma.user_.count({ where });
 
             res.status(200).json({
@@ -141,7 +131,6 @@ module.exports = {
         }
     },
 
-    // Fonction pour récupérer un utilisateur par ID
     getUserById: async (req, res) => {
         try {
             const userId = req.params.id;
@@ -204,7 +193,6 @@ module.exports = {
         }
     },
 
-    // Fonction pour récupérer un utilisateur par username
     getUserByUsername: async (req, res) => {
         try {
             const { username } = req.params;
@@ -264,13 +252,11 @@ module.exports = {
         }
     },
 
-    // Fonction pour modifier un utilisateur
     modifyUser: async (req, res) => {
         try {
             const userId = req.params.id;
             const { username, name, email, bio, ppPath, language, currentPassword, newPassword } = req.body;
 
-            // Vérifier que l'utilisateur existe
             const existingUser = await prisma.user_.findUnique({
                 where: { id: userId }
             });
@@ -281,10 +267,8 @@ module.exports = {
                 });
             }
 
-            // Préparer les données à mettre à jour
             const updateData = {};
 
-            // Vérifier l'unicité de l'email et username si ils sont modifiés
             if (email && email !== existingUser.email) {
                 const emailExists = await prisma.user_.findUnique({
                     where: { email: email }
@@ -309,13 +293,11 @@ module.exports = {
                 updateData.username = username;
             }
 
-            // Autres champs
             if (name) updateData.name = name;
             if (bio !== undefined) updateData.bio = bio;
             if (ppPath !== undefined) updateData.ppPath = ppPath;
             if (language !== undefined) updateData.language = language;
 
-            // Gestion du changement de mot de passe
             if (newPassword) {
                 if (!currentPassword) {
                     return res.status(400).json({
@@ -323,7 +305,6 @@ module.exports = {
                     });
                 }
 
-                // Vérifier le mot de passe actuel
                 const isCurrentPasswordValid = await bcrypt.compare(currentPassword, existingUser.passwordHash);
                 if (!isCurrentPasswordValid) {
                     return res.status(401).json({
@@ -331,12 +312,10 @@ module.exports = {
                     });
                 }
 
-                // Hasher le nouveau mot de passe
                 const saltRounds = 10;
                 updateData.passwordHash = await bcrypt.hash(newPassword, saltRounds);
             }
 
-            // Mettre à jour l'utilisateur
             const updatedUser = await prisma.user_.update({
                 where: { id: userId },
                 data: updateData,
@@ -367,12 +346,10 @@ module.exports = {
         }
     },
 
-    // Fonction pour supprimer un utilisateur
     deleteUser: async (req, res) => {
         try {
             const userId = req.params.id;
 
-            // Vérifier que l'utilisateur existe
             const existingUser = await prisma.user_.findUnique({
                 where: { id: userId }
             });
@@ -383,7 +360,6 @@ module.exports = {
                 });
             }
 
-            // Supprimer l'utilisateur (les relations seront supprimées automatiquement grâce à onDelete: Cascade)
             await prisma.user_.delete({
                 where: { id: userId }
             });
@@ -400,12 +376,10 @@ module.exports = {
         }
     },
 
-    // Fonction pour bloquer/débloquer un utilisateur
     toggleBlockUser: async (req, res) => {
         try {
             const userId = req.params.id;
 
-            // Vérifier que l'utilisateur existe
             const existingUser = await prisma.user_.findUnique({
                 where: { id: userId }
             });
@@ -416,7 +390,6 @@ module.exports = {
                 });
             }
 
-            // Inverser le statut de blocage
             const updatedUser = await prisma.user_.update({
                 where: { id: userId },
                 data: {
@@ -443,7 +416,6 @@ module.exports = {
         }
     },
 
-    // Fonction pour suivre/ne plus suivre un utilisateur
     toggleFollowUser: async (req, res) => {
         try {
             const { followerId, followedId } = req.body;
@@ -460,7 +432,6 @@ module.exports = {
                 });
             }
 
-            // Vérifier si la relation existe déjà
             const existingFollow = await prisma.follow.findUnique({
                 where: {
                     followerId_followedId: {
@@ -471,7 +442,6 @@ module.exports = {
             });
 
             if (existingFollow) {
-                // Supprimer le suivi
                 await prisma.follow.delete({
                     where: {
                         followerId_followedId: {
@@ -486,7 +456,6 @@ module.exports = {
                     following: false
                 });
             } else {
-                // Créer le suivi
                 await prisma.follow.create({
                     data: {
                         followerId: followerId,
@@ -508,7 +477,6 @@ module.exports = {
         }
     },
 
-    // Fonction pour récupérer les followers d'un utilisateur
     getUserFollowers: async (req, res) => {
         try {
             const userId = req.params.id;
@@ -557,7 +525,6 @@ module.exports = {
         }
     },
 
-    // Fonction pour récupérer les utilisateurs suivis
     getUserFollowing: async (req, res) => {
         try {
             const userId = req.params.id;
@@ -607,7 +574,6 @@ module.exports = {
     }
 };
 
-// Fermer la connexion Prisma à l'arrêt de l'application
 process.on('beforeExit', async () => {
     await prisma.$disconnect();
 });
