@@ -28,7 +28,7 @@ module.exports = {
                 });
             }
 
-            // Hasher le mot de passe
+            // Hash password
             const saltRounds = 10;
             const hashedPassword = await bcrypt.hash(password, saltRounds);
 
@@ -163,7 +163,7 @@ module.exports = {
                         orderBy: {
                             createdAt: 'desc'
                         },
-                        take: 10 // Limiter aux 10 derniers posts
+                        take: 10 // 10 last posts
                     },
                     _count: {
                         select: {

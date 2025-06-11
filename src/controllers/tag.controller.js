@@ -449,7 +449,6 @@ module.exports = {
         try {
             const { tagId, postId } = req.params;
 
-            // Vérifier si l'association existe
             const existingAssociation = await prisma.asso11.findUnique({
                 where: {
                     idTag_idPost: {
@@ -625,7 +624,7 @@ module.exports = {
             const recentTags = await prisma.tag.count({
                 where: {
                     createdAt: {
-                        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 jours
+                        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 days
                     }
                 }
             });
@@ -648,7 +647,6 @@ module.exports = {
     }
 };
 
-// Fermer la connexion Prisma à l'arrêt de l'application
 process.on('beforeExit', async () => {
     await prisma.$disconnect();
 });
