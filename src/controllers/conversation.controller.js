@@ -3,7 +3,7 @@ import Conversation from '../models/conversation.model.js';
 export default {
   createConversation: async (req, res) => {
     try {
-      const newConversation = new Conversation({ participant });
+      const newConversation = new Conversation(req.participants );
       await newConversation.save();
       res.status(201).send('Conversation created successfully');
     } catch (err) {

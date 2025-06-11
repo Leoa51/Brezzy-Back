@@ -1,7 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-
+import cors from 'cors'
 import authMiddleware from './middleware/authMiddleware.js';
 import { authRouter } from './routes/auth.route.js';
 import tagsRouter from './routes/tag.route.js';
@@ -17,13 +17,13 @@ const app = express();
 const port = process.env.API_PORT;
 
 app.use(express.json());
-
-
-
+app.use(cors({
+    origin:'*',
+}))
 // Définition des routes
-app.use('/api/tags', tagsRouter);
-app.use('/api/posts', postsRouter);
-app.use('/api/conversations', Conversationrouter);
+app.use('/api/tags',authMiddleware, tagsRouter);
+app.use('/api/posts',authMiddleware, postsRouter);
+app.use('/api/conversations',authMiddleware, Conversationrouter);
 app.use('/api/auth', authRouter); // tu avais importé `authRouter` sans l'utiliser
 
 

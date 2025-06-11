@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("POSTEGRE_DATABASE_URL")
 }
 
 model User {
@@ -202,24 +202,3 @@ model LinkVid {
   @@map("link_vid_1")
 }
 
-model Conversation {
-  id           String         @id @default(cuid())
-  createdAt    DateTime       @default(now()) @map("created_at")
-  updatedAt    DateTime       @updatedAt @map("updated_at")
-  participants Participants[]
-
-  @@map("Conversation_1")
-}
-
-model Participants {
-  id             String       @id @default(cuid())
-  conversationId String       @map("conversation_id")
-  userId1        String       @map("id_1")
-  userId2        String       @map("id_2")
-  createdAt      DateTime     @default(now()) @map("created_at")
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user           User        @relation(fields: [userId1], references: [id], onDelete: Cascade)
-
-  @@unique([conversationId, userId1])
-  @@map("Participants_1")
-}

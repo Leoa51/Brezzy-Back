@@ -32,8 +32,8 @@ const io = new Server(server, {
     },
 });
 
-server.listen(process.env.API_PORT, () => {
-    console.log(`Server is running on port ${process.env.API_PORT}`);
+server.listen(3101, () => {
+    console.log(`Server is running on port `);
 });
 
 
@@ -55,7 +55,7 @@ io.on('connection', (socket) => {
     });
 
 
-    socket.on('message', async (data) => {
+    socket.on('new_message', async (data) => {
         const { convId, content, pictureUrl, videoUrl } = data;
         const author = socket.userId;
 
