@@ -6,7 +6,6 @@ import authMiddleware from './middleware/authMiddleware.js';
 import { authRouter } from './routes/auth.route.js';
 import tagsRouter from './routes/tag.route.js';
 import postsRouter from './routes/post.route.js';
-import usersRouter from './routes/user.route.js';
 import Conversationrouter from './routes/conversation.route.js';
 
 dotenv.config();
@@ -19,14 +18,11 @@ const port = process.env.API_PORT;
 
 app.use(express.json());
 
-// Auth Middleware
-app.use(authMiddleware);
+
 
 // Définition des routes
-app.use('/api/tasks', tasksRouter);
 app.use('/api/tags', tagsRouter);
 app.use('/api/posts', postsRouter);
-app.use('/api/users', usersRouter);
 app.use('/api/conversations', Conversationrouter);
 app.use('/api/auth', authRouter); // tu avais importé `authRouter` sans l'utiliser
 
