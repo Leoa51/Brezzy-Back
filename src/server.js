@@ -2,7 +2,7 @@ import http from 'http';
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import { Server as socketIO } from 'socket.io';
+import { Server } from 'socket.io';
 import { webSocketAuth } from './middleware/WebSocketAuth.js';
 
 import Conversation from './models/conversation.model.js';
@@ -18,9 +18,6 @@ mongoose
         console.log("MongoDB connected !");
 
         // Démarre l'application sur le port spécifié.
-        app.listen(port, () => {
-            console.log(`App listening on port ${port}`);
-        });
     })
     .catch((err) => {
         // Affiche une erreur si la connexion échoue.
@@ -35,21 +32,23 @@ const io = new Server(server, {
     },
 });
 
-webSocketAuth(io);
+server.listen(process.env.API_PORT, () => {
+    console.log(`Server is running on port ${process.env.API_PORT}`);
+});
+
 
 
 io.on('connection', (socket) => {
-    console.log('A user connected');
 
-    //map userId to socket.id
-    const userId = socket.userId;
+    //map userIdn to socket.id
+    const userId = 1;
     usersSocketIds[userId] = socket.id;
     console.log(`User ${userId} connected with socket ID ${socket.id}`);
 
 
     socket.on('disconnect', () => {
         //remove userId from usersSocketIds
-        const userId = socket.userId;
+        const userId = 1;
         delete usersSocketIds[userId];
 
         console.log('User disconnected');
@@ -101,8 +100,5 @@ io.on('connection', (socket) => {
         }
     });
 });
-
-
-
 
 

@@ -1,116 +1,225 @@
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("POSTEGRE_DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  role      String   @default("user")
-  username  String   @unique
-  name      String
-  lastname  String
-  email     String   @unique
-  password  String
-  bio       String   @default("") @db.VarChar(500)
-  pdp       String   @default("")
-  langage   String   @default("fr")
-  isBlocked Boolean  @default(false)
-  nb_Report Int      @default(0)
-  createdAt DateTime @default(now())
+  id           String         @id @default(cuid())
+  name         String
+  email        String         @unique
+  passwordHash String         @map("password_hash")
+  bio          String?
+  ppPath       String?        @map("pp_path")
+  username     String         @unique
+  language     String?
+  isBlocked    Boolean        @default(false) @map("is_blocked")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  tagAssocs    Asso11[]
+  comments     CommentPost[]
+  followers    Follow[]       @relation("FollowedUser")
+  following    Follow[]       @relation("FollowerUser")
+  images       Image[]
+  likes        LikePost[]
+  participants Participants[]
+  posts        Post[]
+  reports      ReportPost[]
+  userReports  ReportUser[]   @relation("ReportedUser")
+  reportsMade  ReportUser[]   @relation("ReporterUser")
+  videos       Video[]
+  linkImages   LinkImg[]
+  linkVideos   LinkVid[]
+  publications Publish[]
 
-  // Relations de suivi
-  followers Follow[] @relation("Followed")
-  following Follow[] @relation("Following")
-
-  // Relations de posts
-  posts   Post[] @relation("UserPosts")
-  likedBy Post[] @relation("LikedPosts")
-
-  // Relations de tags
-  createdTags Tag[] @relation("CreatedTags")
-  taggedIn    Tag[] @relation("UserTags")
-
-  // Relations de reports
-  reportsReceived ReportUser[] @relation("ReportsReceived")
-  reportsMade     ReportUser[] @relation("ReportsMade")
-  postReportsMade ReportPost[] @relation("PostReportsMade")
-}
-
-model Follow {
-  id          Int  @id @default(autoincrement())
-  follower    User @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
-  followerId  Int
-  following   User @relation("Followed", fields: [followingId], references: [id], onDelete: Cascade)
-  followingId Int
-
-  @@unique([followerId, followingId])
+  @@map("User1")
 }
 
 model Post {
-  id         Int      @id @default(autoincrement())
-  message    String   @db.VarChar(2000)
-  picture    String?  @default("")
-  video      String?  @default("")
-  likeNumber Int      @default(0)
-  nb_Report  Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String        @id @default(cuid())
+  author       String
+  message      String
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  tags         Asso11[]
+  comments     CommentPost[]
+  likes        LikePost[]
+  user         User        @relation(fields: [author], references: [id], onDelete: Cascade)
+  reports      ReportPost[]
+  linkImages   LinkImg[]
+  linkVideos   LinkVid[]
+  publications Publish[]
 
-  authorId Int
-  author   User @relation("UserPosts", fields: [authorId], references: [id], onDelete: Cascade)
-
-  likedBy User[] @relation("LikedPosts")
-
-  tags Tag[] @relation("PostTags")
-
-  parentPostId Int?
-  parentPost   Post?  @relation("PostComments", fields: [parentPostId], references: [id], onDelete: Cascade)
-  comments     Post[] @relation("PostComments")
-
-  reports ReportPost[]
+  @@map("Post_1")
 }
 
-model Tag {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique @db.VarChar(50)
-  description String?  @default("") @db.VarChar(200)
-  usageCount  Int      @default(0)
-  createdAt   DateTime @default(now())
+model CommentPost {
+  id         String   @id @default(cuid())
+  author     String
+  idPost     String   @map("ID_1")
+  authorPost String   @map("author_1")
+  content    String
+  createdAt  DateTime @default(now()) @map("created_at")
+  post       Post     @relation(fields: [idPost], references: [id], onDelete: Cascade)
+  user       User    @relation(fields: [author], references: [id], onDelete: Cascade)
 
-  createdById Int?
-  createdBy   User?  @relation("CreatedTags", fields: [createdById], references: [id], onDelete: SetNull)
-  posts       Post[] @relation("PostTags")
-  users       User[] @relation("UserTags")
+  @@map("Comment_post_1")
 }
 
-model ReportUser {
-  id     Int      @id @default(autoincrement())
-  reason String
-  date   DateTime @default(now())
+model LikePost {
+  id        String   @id @default(cuid())
+  idPost    String   @map("ID_1")
+  author    String
+  createdAt DateTime @default(now()) @map("created_at")
+  post      Post     @relation(fields: [idPost], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [author], references: [id], onDelete: Cascade)
 
-  userId Int
-  user   User @relation("ReportsReceived", fields: [userId], references: [id], onDelete: Cascade)
-
-  reportedById Int
-  reportedBy   User @relation("ReportsMade", fields: [reportedById], references: [id], onDelete: Cascade)
-
-  @@unique([userId, reportedById])
+  @@unique([idPost, author])
+  @@map("Like_post_1")
 }
 
 model ReportPost {
-  id     Int      @id @default(autoincrement())
-  reason String
-  date   DateTime @default(now())
-  postId Int
-  post   Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  idPost    String   @map("ID_1")
+  author    String
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  post      Post     @relation(fields: [idPost], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [author], references: [id], onDelete: Cascade)
 
-  reportedById Int
-  reportedBy   User @relation("PostReportsMade", fields: [reportedById], references: [id], onDelete: Cascade)
+  @@map("Report_post_1")
+}
 
-  @@unique([postId, reportedById]) // Un utilisateur ne peut reporter le même post qu'une fois
+model ReportUser {
+  id           String   @id @default(cuid())
+  reportedId   String   @map("id_1")
+  reporterId   String   @map("reporter_id")
+  reason       String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  reportedUser User    @relation("ReportedUser", fields: [reportedId], references: [id], onDelete: Cascade)
+  reporterUser User    @relation("ReporterUser", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@unique([reportedId, reporterId])
+  @@map("Report_User1")
+}
+
+model Follow {
+  id         String   @id @default(cuid())
+  followerId String   @map("id_1")
+  followedId String   @map("followed_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  followed   User    @relation("FollowedUser", fields: [followedId], references: [id], onDelete: Cascade)
+  follower   User    @relation("FollowerUser", fields: [followerId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followedId])
+  @@map("Follow_1")
+}
+
+model Publish {
+  id        String   @id @default(cuid())
+  idPost    String   @map("ID_1")
+  author    String
+  createdAt DateTime @default(now()) @map("created_at")
+  post      Post     @relation(fields: [idPost], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [author], references: [id], onDelete: Cascade)
+
+  @@map("publish_1")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  idTag     String   @unique @map("id_tag")
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  posts     Asso11[]
+
+  @@map("tag_1")
+}
+
+model Asso11 {
+  id     String @id @default(cuid())
+  idTag  String @map("id_tag")
+  idPost String @map("ID")
+  author String
+  post   Post   @relation(fields: [idPost], references: [id], onDelete: Cascade)
+  user   User  @relation(fields: [author], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
+
+  @@unique([idTag, idPost])
+  @@map("Asso_11_1")
+}
+
+model Image {
+  id         String    @id @default(cuid())
+  cdnPath    String    @map("cdn_path")
+  author     String
+  createdAt  DateTime  @default(now()) @map("created_at")
+  user       User     @relation(fields: [author], references: [id], onDelete: Cascade)
+  linkImages LinkImg[]
+
+  @@map("Image_1")
+}
+
+model Video {
+  id         String    @id @default(cuid())
+  cdnPath    String    @map("cdn_path")
+  author     String
+  createdAt  DateTime  @default(now()) @map("created_at")
+  user       User     @relation(fields: [author], references: [id], onDelete: Cascade)
+  linkVideos LinkVid[]
+
+  @@map("Video_1")
+}
+
+model LinkImg {
+  id         String   @id @default(cuid())
+  imageId    String   @map("ID")
+  postAuthor String   @map("author")
+  linkAuthor String   @map("id_1")
+  createdAt  DateTime @default(now()) @map("created_at")
+  image      Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  post       Post     @relation(fields: [postAuthor], references: [id], onDelete: Cascade)
+  user       User    @relation(fields: [linkAuthor], references: [id], onDelete: Cascade)
+
+  @@unique([imageId, postAuthor])
+  @@map("link_img_1")
+}
+
+model LinkVid {
+  id         String   @id @default(cuid())
+  videoId    String   @map("ID")
+  postAuthor String   @map("author")
+  linkAuthor String   @map("id_1")
+  createdAt  DateTime @default(now()) @map("created_at")
+  video      Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  post       Post     @relation(fields: [postAuthor], references: [id], onDelete: Cascade)
+  user       User    @relation(fields: [linkAuthor], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, postAuthor])
+  @@map("link_vid_1")
+}
+
+model Conversation {
+  id           String         @id @default(cuid())
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  participants Participants[]
+
+  @@map("Conversation_1")
+}
+
+model Participants {
+  id             String       @id @default(cuid())
+  conversationId String       @map("conversation_id")
+  userId1        String       @map("id_1")
+  userId2        String       @map("id_2")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User        @relation(fields: [userId1], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId1])
+  @@map("Participants_1")
 }

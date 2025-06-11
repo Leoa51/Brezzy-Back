@@ -1,76 +1,46 @@
 import express from 'express';
 import mongoose from 'mongoose';
-import authMiddleware from './middleware/authMiddleware.js';
-//import tasksController from './controllers/tasks.controller.js';
 import dotenv from 'dotenv';
+
+import authMiddleware from './middleware/authMiddleware.js';
 import { authRouter } from './routes/auth.route.js';
+import tagsRouter from './routes/tag.route.js';
+import postsRouter from './routes/post.route.js';
+import usersRouter from './routes/user.route.js';
+import Conversationrouter from './routes/conversation.route.js';
 
 dotenv.config();
+
 // Création d'une instance de l'application Express
 const app = express();
 
-// creation instance de prisma client
-
 // Définition du port sur lequel le serveur écoutera les requêtes
-const port = process.env.API_PORT
-
-
-
+const port = process.env.API_PORT;
 
 app.use(express.json());
-//app.use('/api/tasks', tasksController.getAllTasks); TODO:FIX by using prisma not mongoose
 
-app.use('/api', authRouter)
-// Définition d'une route GET pour la racine du site ('/')
-
-
+// Auth Middleware
 app.use(authMiddleware);
-// Lorsque quelqu'un accède à cette route, une réponse "Hello World!" est envoyée
-app.get('/', (req, res) => {
-    res.send('Hello World!');
-});
+
+// Définition des routes
+app.use('/api/tasks', tasksRouter);
+app.use('/api/tags', tagsRouter);
+app.use('/api/posts', postsRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/conversations', Conversationrouter);
+app.use('/api/auth', authRouter); // tu avais importé `authRouter` sans l'utiliser
 
 
+
+// Connexion à MongoDB et lancement du serveur
 mongoose
-    // .connect("mongodb://" + process.env.MONGO_HOST + ":" + process.env.MONGO_PORT + "/" + process.env.MONGO_DATABASE_NAME)
-    .connect(`mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_NAME}?authSource=admin`)
-    .then(() => {
-        // Affiche un message de succès lorsque la connexion est établie.
-        console.log("MongoDB connected !");
-
-        // Démarre l'application sur le port spécifié.
-        app.listen(port, () => {
-            console.log(`App listening on port ${port}`);
-        });
-    })
-    .catch((err) => {
-        // Affiche une erreur si la connexion échoue.
-        console.log(err);
+  .connect(`mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_NAME}?authSource=admin`)
+  .then(() => {
+    console.log('MongoDB connected !');
+    app.listen(port, () => {
+      console.log(`App listening on port ${port}`);
     });
-
-// mongoose
-//     .connect(process.env.MONGO_URI, {
-//         // Options recommandées pour MongoDB Atlas
-//         useNewUrlParser: true,
-//         useUnifiedTopology: true,
-//     })
-//     .then(() => {
-//         console.log("✅ MongoDB Atlas connected successfully!");
-//         console.log(`📊 Database: ${mongoose.connection.name}`);
-//
-//         // Démarre l'application seulement après connexion réussie
-//         app.listen(port, () => {
-//             console.log(`🚀 Server running on port ${port}`);
-//             console.log(`📅 Started at: ${new Date().toISOString()}`);
-//         });
-//     })
-//     .catch((err) => {
-//         console.error("❌ MongoDB connection error:", err.message);
-//         process.exit(1); // Arrête l'application si pas de connexion DB
-//     });
-
-// Lancement du serveur pour écouter les requêtes sur le port spécifié
-// Lorsque le serveur démarre, un message est affiché dans la console
-app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`);
-});
+  })
+  .catch((err) => {
+    console.log(err);
+  });
