@@ -1,0 +1,95 @@
+services:
+  mongodb:
+    image: mongo:${MONGO_VERSION:-latest}
+    restart: always
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data/mongodb:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-example}
+    networks:
+      - db
+
+  postegredb:
+    image: postgres:${POSTGRES_VERSION:-latest}
+    restart: always
+    container_name: postegredb
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-example}
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+    networks:
+      - db
+
+  adminer:
+    image: michalhosna/adminer
+    restart: always
+    container_name: adminer
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postegredb
+      - mongodb
+    networks:
+      - db
+    environment:
+      ADMINER_DEFAULT_SERVER: postegredb
+      ADMINER_DESIGN: nette
+      ADMINER_DB: ${POSTGRES_DB:-app}
+      ADMINER_DRIVER: pgsql
+      ADMINER_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
+      ADMINER_SERVER: postegredb
+      ADMINER_USERNAME: ${POSTGRES_USER:-app}
+      ADMINER_AUTOLOGIN: 1
+      ADMINER_NAME: BreezySupport
+
+  mongo-express:
+    image: mongo-express:latest
+    restart: always
+    container_name: mongo-express
+    ports:
+      - "8082:8081"
+    depends_on:
+      - mongodb
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_INITDB_ROOT_USERNAME:-root}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-example}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_INITDB_ROOT_USERNAME:-root}:${MONGO_INITDB_ROOT_PASSWORD:-example}@mongodb:27017/
+      ME_CONFIG_BASICAUTH: false
+    networks:
+      - db
+
+  api-1:
+    build:
+      context: .
+      dockerfile: docker/DockerFile.api
+    restart: always
+    container_name: api-1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongodb
+      - postegredb
+    environment:
+      POSTGRES_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-!ChangeMe!}@database:${POSTGRES_PORT}/${POSTGRES_DB:-app}?serverVersion=${POSTGRES_VERSION:-17}&charset=${POSTGRES_CHARSET:-utf8}
+    networks:
+      - app
+      - db
+    env_file:
+      - .env
+
+networks:
+  app:
+  db:
+
+volumes:
+  mongodb:
+  postegredb:
+  matomo:
