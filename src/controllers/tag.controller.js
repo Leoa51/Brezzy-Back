@@ -1,26 +1,26 @@
 // Initialisation d'un tableau vide pour stocker les tâches.
-const tasksList = [];
+const tagsList = [];
 
 
-const Task = require('../models/tasks.model.js');
+const Tag = require('../models/tag.model.js');
 
 module.exports = {
     // Fonction asynchrone pour créer une nouvelle tâche.
-    createTask: async (req, res) => {
+    createTag: async (req, res) => {
         // Extraction des données de la requête : titre et contenu de la tâche.
-        const { title, content } = req.body;
+        const { name } = req.body;
 
         // Vérification que le titre et le contenu sont présents.
         // Si l'un des deux est manquant, on retourne une réponse avec un statut 400 (Bad Request).
-        if (!title || !content) return res.status(400).send("Title and content are required");
+        if (!name ) return res.status(400).send("Title and content are required");
 
         try {
             // Création et sauvegarde d'une nouvelle tâche dans la base de données
-            const newTask = new Task({ title, content });
-            await newTask.save();
+            const newTag = new Tag({ name });
+            await newTag.save();
 
             // Envoi d'une réponse avec un statut 201 (Created) pour indiquer que la tâche a été créée avec succès.
-            res.status(201).send("Task created successfully");
+            res.status(201).send("Tag created successfully");
         } catch (err) {
             // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
             // et l'erreur sous forme de JSON.
@@ -31,11 +31,11 @@ module.exports = {
 
 
     // Fonction asynchrone pour récupérer toutes les tâches.
-    getAllTasks: async (req, res) => {
+    getAllTags: async (req, res) => {
         try {
             // Récupération de toutes les tâches depuis la base de données
-            const tasks = await Task.find();
-            res.status(200).json(tasks);
+            const tags = await Tag.find();
+            res.status(200).json(tags);
         } catch (err) {
             // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
             // et l'erreur sous forme de JSON.
@@ -44,11 +44,11 @@ module.exports = {
     },
 
 
-    deleteTask: async (req, res) => {
+    deleteTag: async (req, res) => {
         try {
             // Récupération de toutes les tâches depuis la base de données
-            const tasks = await Task.findByIdAndDelete(req.params.id);
-            res.status(200).json(tasks);
+            const tags = await Tag.findByIdAndDelete(req.params.id);
+            res.status(200).json(tags);
         } catch (err) {
             // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
             // et l'erreur sous forme de JSON.
@@ -56,11 +56,11 @@ module.exports = {
         }
     },
 
-    getTaskById: async (req, res) => {
+    getTagById: async (req, res) => {
         try {
             // Récupération de toutes les tâches depuis la base de données
-            const tasks = await Task.findById(req.params.id);
-            res.status(200).json(tasks);
+            const tags = await Tag.findById(req.params.id);
+            res.status(200).json(tags);
         } catch (err) {
             // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
             // et l'erreur sous forme de JSON.
@@ -68,11 +68,11 @@ module.exports = {
         }
     },
 
-    modifyTask: async (req, res) => {
+    modifyTag: async (req, res) => {
         try {
             // Récupération de toutes les tâches depuis la base de données
-            const tasks = await Task.findByIdAndUpdate(req.params.id, req.body);
-            res.status(200).json(tasks);
+            const tags = await Tag.findByIdAndUpdate(req.params.id, req.body);
+            res.status(200).json(tags);
         } catch (err) {
             // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
             // et l'erreur sous forme de JSON.

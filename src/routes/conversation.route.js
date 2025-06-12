@@ -4,26 +4,26 @@ const express = require('express');
 // Création d'une nouvelle instance de Router pour définir les routes
 const router = express.Router();
 
-// Importe le contrôleur des tâches depuis le fichier tasks.controller.js
-const tasksController = require('../controllers/tasks.controller.js');
+// Importe le contrôleur des tâches depuis le fichier conversations.controller.js
+const conversationsController = require('../controllers/conversation.controller.js');
 
 const requiredFields = require('../middlewares/requiredFields.middleware.js');
 
-router.post('/', requiredFields(['title', 'content']), tasksController.createTask);
+router.post('/', requiredFields(['participant']), conversationsController.createConversation);
 
 // Définition d'une route POST pour la racine du routeur
-router.post('/', tasksController.createTask);
+router.post('/', conversationsController.createConversation);
 
 // Définition d'une route GET pour obtenir toutes les tâches
-router.get('/', tasksController.getAllTasks);
+router.get('/', conversationsController.getAllConversations);
 
 // Définition d'une route GET pour obtenir une tâche par son ID
-router.get('/:id', tasksController.getTaskById);
+router.get('/:id', conversationsController.getConversationById);
 
-router.patch('/:id', tasksController.modifyTask);
+router.patch('/:id', conversationsController.modifyConversation);
 
 // Définition d'une route DELETE pour supprimer une tâche par son ID
-router.delete('/:id', tasksController.deleteTask);
+router.delete('/:id', conversationsController.deleteConversation);
 
 
 
