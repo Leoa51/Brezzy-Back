@@ -54,7 +54,21 @@ io.on('connection', (socket) => {
         console.log('User disconnected');
     });
 
+    socket.on('conversation', async (data) => {
+        const participants = data.participants
+        const newConversation = await Conversation.create({
+            participants,
+            messages: [],
+        });
 
+        const userIds = participants.map(p => p.toString());
+
+        userIds.forEach(userId => {
+            if (usersSocketIds[userId]) {
+                io.to(usersSocketIds[userId]).emit('new_conversation', newConversation);
+            }
+        });
+    })
     socket.on('new_message', async (data) => {
         const { convId, content, pictureUrl, videoUrl } = data;
         const author = socket.userId;

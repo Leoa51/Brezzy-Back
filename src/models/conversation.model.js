@@ -35,7 +35,6 @@ const conversationSchema = new mongoose.Schema({
             default: false
         }
     }],
-    lastMessage:
     lastMessageAt: {
         type: Date,
         default: Date.now
