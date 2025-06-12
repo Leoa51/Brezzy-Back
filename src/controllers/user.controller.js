@@ -1,83 +1,705 @@
-// Initialisation d'un tableau vide pour stocker les tâches.
-const usersList = [];
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
+const prisma = new PrismaClient();
 
+export async function createUser(req, res) {
+    const { username, name, firstName, email, password, bio, ppPath, language } = req.body;
 
-const User = require('../models/user.model.js');
-
-module.exports = {
-    // Fonction asynchrone pour créer une nouvelle tâche.
-    createUser: async (req, res) => {
-        // Extraction des données de la requête : titre et contenu de la tâche.
-        const { role, username, name, mail, password, bio, pp, language } = req.body;
-
-        // Vérification que le titre et le contenu sont présents.
-        // Si l'un des deux est manquant, on retourne une réponse avec un statut 400 (Bad Request).
-        if (!role || !username || !name || !mail || !password || !bio || !pp || !language) return res.status(400).send("Title and content are required");
-
-        try {
-            // Création et sauvegarde d'une nouvelle tâche dans la base de données
-            const newUser = new User({ role, username, name, mail, password, bio, pp, language });
-            await newUser.save();
-
-            // Envoi d'une réponse avec un statut 201 (Created) pour indiquer que la tâche a été créée avec succès.
-            res.status(201).send("User created successfully");
-        } catch (err) {
-            // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
-            // et l'erreur sous forme de JSON.
-            console.log(err);
-            res.status(500).json(err);
+    if (!username || !name || !email || !password || !firstName) {
+        return res.status(400).json({
+            error: "Username, name, email and password are required"
+        });
+    }
+    try {
+        const existingUser = await prisma.user_.findFirst({
+            where: {
+                OR: [
+                    { email: email },
+                    { username: username }
+                ]
+            }
+        });
+        if (existingUser) {
+            return res.status(409).json({
+                error: "User with this email or username already exists"
+            });
         }
-    },
 
+        // Hash password
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Fonction asynchrone pour récupérer toutes les tâches.
-    getAllUsers: async (req, res) => {
-        try {
-            // Récupération de toutes les tâches depuis la base de données
-            const users = await User.find();
-            res.status(200).json(users);
-        } catch (err) {
-            // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
-            // et l'erreur sous forme de JSON.
-            res.status(500).json(err);
+        const newUser = await prisma.user_.create({
+            data: {
+                username,
+                name,
+                firstName,
+                email,
+                passwordHash: hashedPassword,
+                bio: bio || null,
+                ppPath: ppPath || null,
+                language: language || null,
+                isBlocked: false
+            },
+            select: {
+                id: true,
+                username: true,
+                name: true,
+                email: true,
+                bio: true,
+                ppPath: true,
+                language: true,
+                isBlocked: true,
+                createdAt: true,
+                updatedAt: true
+            }
+        });
+
+        res.status(201).json({
+            message: "User created successfully",
+            user: newUser
+        });
+    } catch (err) {
+        console.error("Error creating user:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+export async function getAllUsers(req, res) {
+    try {
+        const { page = 1, limit = 10, search = '' } = req.query;
+        const skip = (page - 1) * limit;
+
+        const where = search ? {
+            OR: [
+                { username: { contains: search, mode: 'insensitive' } },
+                { name: { contains: search, mode: 'insensitive' } },
+                { email: { contains: search, mode: 'insensitive' } }
+            ]
+        } : {};
+
+        const users = await prisma.user_.findMany({
+            where,
+            select: {
+                id: true,
+                username: true,
+                name: true,
+                email: true,
+                bio: true,
+                ppPath: true,
+                language: true,
+                isBlocked: true,
+                createdAt: true,
+                updatedAt: true,
+                _count: {
+                    select: {
+                        posts: true,
+                        followers: true,
+                        following: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
+            skip: parseInt(skip),
+            take: parseInt(limit)
+        });
+
+        const totalUsers = await prisma.user_.count({ where });
+
+        res.status(200).json({
+            users,
+            pagination: {
+                currentPage: parseInt(page),
+                totalPages: Math.ceil(totalUsers / limit),
+                totalUsers,
+                hasMore: skip + users.length < totalUsers
+            }
+        });
+    } catch (err) {
+        console.error("Error fetching users:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+export async function getUserById(req, res) {
+    try {
+        const userId = req.params.id;
+
+        const user = await prisma.user_.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                username: true,
+                name: true,
+                email: true,
+                bio: true,
+                ppPath: true,
+                language: true,
+                isBlocked: true,
+                createdAt: true,
+                updatedAt: true,
+                posts: {
+                    select: {
+                        id: true,
+                        message: true,
+                        createdAt: true,
+                        _count: {
+                            select: {
+                                likes: true,
+                                comments: true
+                            }
+                        }
+                    },
+                    orderBy: {
+                        createdAt: 'desc'
+                    },
+                    take: 10 // 10 last posts
+                },
+                _count: {
+                    select: {
+                        posts: true,
+                        followers: true,
+                        following: true,
+                        likes: true,
+                        comments: true
+                    }
+                }
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                error: "User not found"
+            });
         }
-    },
 
+        res.status(200).json(user);
+    } catch (err) {
+        console.error("Error fetching user:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
 
-    deleteUser: async (req, res) => {
-        try {
-            // Récupération de toutes les tâches depuis la base de données
-            const users = await User.findByIdAndDelete(req.params.id);
-            res.status(200).json(users);
-        } catch (err) {
-            // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
-            // et l'erreur sous forme de JSON.
-            res.status(500).json(err);
+export async function getUserInfoById(req, res) {
+    try {
+        const userId = req.params.id;
+
+        const user = await prisma.user_.findUnique({
+            where: { id: userId },
+            select: {
+                username: true,
+                bio: true,
+                ppPath: true,
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                error: "User not found"
+            });
         }
-    },
 
-    getUserById: async (req, res) => {
-        try {
-            // Récupération de toutes les tâches depuis la base de données
-            const users = await User.findById(req.params.id);
-            res.status(200).json(users);
-        } catch (err) {
-            // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
-            // et l'erreur sous forme de JSON.
-            res.status(500).json(err);
+        res.status(200).json(user);
+    } catch (err) {
+        console.error("Error fetching user:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+export async function getUserByUsername(req, res) {
+    try {
+        const { username } = req.params;
+
+        const user = await prisma.user_.findUnique({
+            where: { username: username },
+            select: {
+                id: true,
+                username: true,
+                name: true,
+                email: true,
+                bio: true,
+                ppPath: true,
+                language: true,
+                isBlocked: true,
+                createdAt: true,
+                updatedAt: true,
+                posts: {
+                    select: {
+                        id: true,
+                        message: true,
+                        createdAt: true,
+                        _count: {
+                            select: {
+                                likes: true,
+                                comments: true
+                            }
+                        }
+                    },
+                    orderBy: {
+                        createdAt: 'desc'
+                    }
+                },
+                _count: {
+                    select: {
+                        posts: true,
+                        followers: true,
+                        following: true
+                    }
+                }
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                error: "User not found"
+            });
         }
-    },
 
-    modifyUser: async (req, res) => {
-        try {
-            // Récupération de toutes les tâches depuis la base de données
-            const users = await User.findByIdAndUpdate(req.params.id, req.body);
-            res.status(200).json(users);
-        } catch (err) {
-            // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
-            // et l'erreur sous forme de JSON.
-            res.status(500).json(err);
+        res.status(200).json(user);
+    } catch (err) {
+        console.error("Error fetching user:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+export async function modifyUser(req, res) {
+    try {
+        const userId = req.params.id;
+        const { username, name, email, bio, ppPath, language, currentPassword, newPassword } = req.body;
+
+        const existingUser = await prisma.user_.findUnique({
+            where: { id: userId }
+        });
+
+        if (!existingUser) {
+            return res.status(404).json({
+                error: "User not found"
+            });
         }
-    },
 
-};
+        const updateData = {};
+
+        if (email && email !== existingUser.email) {
+            const emailExists = await prisma.user_.findUnique({
+                where: { email: email }
+            });
+            if (emailExists) {
+                return res.status(409).json({
+                    error: "Email already exists"
+                });
+            }
+            updateData.email = email;
+        }
+
+        if (username && username !== existingUser.username) {
+            const usernameExists = await prisma.user_.findUnique({
+                where: { username: username }
+            });
+            if (usernameExists) {
+                return res.status(409).json({
+                    error: "Username already exists"
+                });
+            }
+            updateData.username = username;
+        }
+
+        if (name) updateData.name = name;
+        if (bio !== undefined) updateData.bio = bio;
+        if (ppPath !== undefined) updateData.ppPath = ppPath;
+        if (language !== undefined) updateData.language = language;
+
+        if (newPassword) {
+            if (!currentPassword) {
+                return res.status(400).json({
+                    error: "Current password is required to set new password"
+                });
+            }
+
+            const isCurrentPasswordValid = await bcrypt.compare(currentPassword, existingUser.passwordHash);
+            if (!isCurrentPasswordValid) {
+                return res.status(401).json({
+                    error: "Current password is incorrect"
+                });
+            }
+
+            const saltRounds = 10;
+            updateData.passwordHash = await bcrypt.hash(newPassword, saltRounds);
+        }
+
+        const updatedUser = await prisma.user_.update({
+            where: { id: userId },
+            data: updateData,
+            select: {
+                id: true,
+                username: true,
+                name: true,
+                email: true,
+                bio: true,
+                ppPath: true,
+                language: true,
+                isBlocked: true,
+                createdAt: true,
+                updatedAt: true
+            }
+        });
+
+        res.status(200).json({
+            message: "User updated successfully",
+            user: updatedUser
+        });
+    } catch (err) {
+        console.error("Error updating user:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+export async function deleteUser(req, res) {
+    try {
+        const userId = req.params.id;
+
+        const existingUser = await prisma.user_.findUnique({
+            where: { id: userId }
+        });
+
+        if (!existingUser) {
+            return res.status(404).json({
+                error: "User not found"
+            });
+        }
+
+        await prisma.user_.delete({
+            where: { id: userId }
+        });
+
+        res.status(200).json({
+            message: "User deleted successfully"
+        });
+    } catch (err) {
+        console.error("Error deleting user:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+export async function toggleBlockUser(req, res) {
+    try {
+        const userId = req.params.id;
+
+        const existingUser = await prisma.user_.findUnique({
+            where: { id: userId }
+        });
+
+        if (!existingUser) {
+            return res.status(404).json({
+                error: "User not found"
+            });
+        }
+
+        const updatedUser = await prisma.user_.update({
+            where: { id: userId },
+            data: {
+                isBlocked: !existingUser.isBlocked
+            },
+            select: {
+                id: true,
+                username: true,
+                name: true,
+                isBlocked: true
+            }
+        });
+
+        res.status(200).json({
+            message: `User ${updatedUser.isBlocked ? 'blocked' : 'unblocked'} successfully`,
+            user: updatedUser
+        });
+    } catch (err) {
+        console.error("Error toggling user block status:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+export async function toggleFollowUser(req, res) {
+    try {
+        const { followerId, followedId } = req.body;
+
+        if (!followerId || !followedId) {
+            return res.status(400).json({
+                error: "FollowerId and followedId are required"
+            });
+        }
+
+        if (followerId === followedId) {
+            return res.status(400).json({
+                error: "Cannot follow yourself"
+            });
+        }
+
+        const existingFollow = await prisma.follow.findUnique({
+            where: {
+                followerId_followedId: {
+                    followerId: followerId,
+                    followedId: followedId
+                }
+            }
+        });
+
+        if (existingFollow) {
+            await prisma.follow.delete({
+                where: {
+                    followerId_followedId: {
+                        followerId: followerId,
+                        followedId: followedId
+                    }
+                }
+            });
+
+            res.status(200).json({
+                message: "Unfollowed successfully",
+                following: false
+            });
+        } else {
+            await prisma.follow.create({
+                data: {
+                    followerId: followerId,
+                    followedId: followedId
+                }
+            });
+
+            res.status(200).json({
+                message: "Followed successfully",
+                following: true
+            });
+        }
+    } catch (err) {
+        console.error("Error toggling follow:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+export async function getUserFollowers(req, res) {
+    try {
+        const userId = req.params.id;
+        const { page = 1, limit = 20 } = req.query;
+        const skip = (page - 1) * limit;
+
+        const followers = await prisma.follow.findMany({
+            where: { followedId: userId },
+            include: {
+                follower: {
+                    select: {
+                        id: true,
+                        username: true,
+                        name: true,
+                        ppPath: true,
+                        bio: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
+            skip: parseInt(skip),
+            take: parseInt(limit)
+        });
+
+        const totalFollowers = await prisma.follow.count({
+            where: { followedId: userId }
+        });
+
+        res.status(200).json({
+            followers: followers.map(f => f.follower),
+            pagination: {
+                currentPage: parseInt(page),
+                totalPages: Math.ceil(totalFollowers / limit),
+                totalFollowers,
+                hasMore: skip + followers.length < totalFollowers
+            }
+        });
+    } catch (err) {
+        console.error("Error fetching followers:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+export async function getUserFollowing(req, res) {
+    try {
+        const userId = req.params.id;
+        const { page = 1, limit = 20 } = req.query;
+        const skip = (page - 1) * limit;
+
+        const following = await prisma.follow.findMany({
+            where: { followerId: userId },
+            include: {
+                followed: {
+                    select: {
+                        id: true,
+                        username: true,
+                        name: true,
+                        ppPath: true,
+                        bio: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
+            skip: parseInt(skip),
+            take: parseInt(limit)
+        });
+
+        const totalFollowing = await prisma.follow.count({
+            where: { followerId: userId }
+        });
+
+        res.status(200).json({
+            following: following.map(f => f.followed),
+            pagination: {
+                currentPage: parseInt(page),
+                totalPages: Math.ceil(totalFollowing / limit),
+                totalFollowing,
+                hasMore: skip + following.length < totalFollowing
+            }
+        });
+    } catch (err) {
+        console.error("Error fetching following:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+
+// export async function getUserMessages(req, res) {
+//     try {
+//         const userId = req.params.id;
+//         const { page = 1, limit = 20 } = req.query;
+//         const skip = (page - 1) * limit;
+//
+//         const messages = await prisma.message.findMany({
+//             where: { receiverId: userId },
+//             include: {
+//                 sender: {
+//                     select: {
+//                         id: true,
+//                         username: true,
+//                         ppPath: true
+//                     }
+//                 }
+//             },
+//             orderBy: {
+//                 createdAt: 'desc'
+//             },
+//             skip: parseInt(skip),
+//             take: parseInt(limit)
+//         });
+//
+//         const totalMessages = await prisma.message.count({
+//             where: { receiverId: userId }
+//         });
+//
+//         res.status(200).json({
+//             messages: messages.map(m => m.sender),
+//             pagination: {
+//                 currentPage: parseInt(page),
+//                 totalPages: Math.ceil(totalMessages / limit),
+//                 totalMessages,
+//                 hasMore: skip + messages.length < totalMessages
+//             }
+//         });
+//     } catch (err) {
+//         console.error("Error fetching messages:", err);
+//         res.status(500).json({
+//             error: "Internal server error",
+//             details: err.message
+//         });
+//     }
+// }
+
+export async function getUserMessages(req, res) {
+    try {
+        const userId = req.params.id;
+        const { page = 1, limit = 20 } = req.query;
+        const skip = (page - 1) * limit;
+
+        const posts = await prisma.post.findMany({
+            where: { author: userId },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        ppPath: true,
+                        name: true
+                    }
+                },
+                _count: {
+                    select: {
+                        likes: true,
+                        commentsOnThis: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
+            skip: parseInt(skip),
+            take: parseInt(limit)
+        });
+
+        const totalPosts = await prisma.post.count({
+            where: { author: userId }
+        });
+
+        res.status(200).json({
+            posts,
+            pagination: {
+                currentPage: parseInt(page),
+                totalPages: Math.ceil(totalPosts / limit),
+                totalPosts,
+                hasMore: skip + posts.length < totalPosts
+            }
+        });
+    } catch (err) {
+        console.error("Error fetching user posts:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+process.on('beforeExit', async () => {
+    await prisma.$disconnect();
+});

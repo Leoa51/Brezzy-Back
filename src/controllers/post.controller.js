@@ -1,83 +1,444 @@
-// Initialisation d'un tableau vide pour stocker les tâches.
-const postsList = [];
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
+export async function createPost(req, res) {
+    const { message, author, originalPostId, parentCommentId } = req.body;
 
-const Post = require('../models/post.model.js');
+    if (!message || !author) {
+        return res.status(400).json({
+            error: "Message and author are required"
+        });
+    }
 
-module.exports = {
-    // Fonction asynchrone pour créer une nouvelle tâche.
-    createPost: async (req, res) => {
-        // Extraction des données de la requête : titre et contenu de la tâche.
-        const { message, author } = req.body;
+    try {
+        const newPost = await prisma.post.create({
+            data: {
+                message,
+                author
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        name: true,
+                        ppPath: true
+                    }
+                }
+            }
+        });
 
-        // Vérification que le titre et le contenu sont présents.
-        // Si l'un des deux est manquant, on retourne une réponse avec un statut 400 (Bad Request).
-        if (!message || !author) return res.status(400).send("Title and content are required");
+        if (originalPostId) {
+            const originalPost = await prisma.post.findUnique({
+                where: { id: originalPostId }
+            });
 
-        try {
-            // Création et sauvegarde d'une nouvelle tâche dans la base de données
-            const newPost = new Post({ message, author });
-            await newPost.save();
+            if (!originalPost) {
+                await prisma.post.delete({ where: { id: newPost.id } });
+                return res.status(404).json({
+                    error: "Original post not found"
+                });
+            }
 
-            // Envoi d'une réponse avec un statut 201 (Created) pour indiquer que la tâche a été créée avec succès.
-            res.status(201).send("Post created successfully");
-        } catch (err) {
-            // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
-            // et l'erreur sous forme de JSON.
-            console.log(err);
-            res.status(500).json(err);
+            if (parentCommentId) {
+                const parentComment = await prisma.commentPost.findUnique({
+                    where: { id: parentCommentId }
+                });
+
+                if (!parentComment || parentComment.postId !== originalPostId) {
+                    await prisma.post.delete({ where: { id: newPost.id } });
+                    return res.status(400).json({
+                        error: "Invalid parent comment"
+                    });
+                }
+            }
+
+            await prisma.commentPost.create({
+                data: {
+                    commentId: newPost.id,
+                    postId: originalPostId,
+                    parentId: parentCommentId || null
+                }
+            });
+
+            return res.status(201).json({
+                message: parentCommentId ? "Reply created successfully" : "Comment created successfully",
+                post: newPost,
+                type: "comment"
+            });
         }
-    },
 
+        res.status(201).json({
+            message: "Post created successfully",
+            post: newPost,
+            type: "post"
+        });
+    } catch (err) {
+        console.error("Error creating post:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
 
-    // Fonction asynchrone pour récupérer toutes les tâches.
-    getAllPosts: async (req, res) => {
-        try {
-            // Récupération de toutes les tâches depuis la base de données
-            const posts = await Post.find();
-            res.status(200).json(posts);
-        } catch (err) {
-            // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
-            // et l'erreur sous forme de JSON.
-            res.status(500).json(err);
+export async function getAllPosts(req, res) {
+    try {
+        const posts = await prisma.post.findMany({
+            where: {
+                thisIsComment: null
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        name: true,
+                        ppPath: true
+                    }
+                },
+                _count: {
+                    select: {
+                        commentsOnThis: true,
+                        likes: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        res.status(200).json(posts);
+    } catch (err) {
+        console.error("Error fetching posts:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+export async function getPostById(req, res) {
+    try {
+        const postId = req.params.id;
+
+        const post = await prisma.post.findUnique({
+            where: { id: postId },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        name: true,
+                        ppPath: true,
+                        bio: true
+                    }
+                },
+                likes: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                username: true
+                            }
+                        }
+                    }
+                },
+                _count: {
+                    select: {
+                        commentsOnThis: true,
+                        likes: true,
+                        reports: true
+                    }
+                }
+            }
+        });
+
+        if (!post) {
+            return res.status(404).json({
+                error: "Post not found"
+            });
         }
-    },
 
+        res.status(200).json(post);
+    } catch (err) {
+        console.error("Error fetching post:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
 
-    deletePost: async (req, res) => {
-        try {
-            // Récupération de toutes les tâches depuis la base de données
-            const posts = await Post.findByIdAndDelete(req.params.id);
-            res.status(200).json(posts);
-        } catch (err) {
-            // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
-            // et l'erreur sous forme de JSON.
-            res.status(500).json(err);
+export async function getPostComments(req, res) {
+    try {
+        const { postId } = req.params;
+        const { page = 1, limit = 20 } = req.query;
+        const skip = (page - 1) * limit;
+
+        const comments = await prisma.commentPost.findMany({
+            where: {
+                postId: postId,
+                parentId: null
+            },
+            include: {
+                commentPost: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                username: true,
+                                name: true,
+                                ppPath: true
+                            }
+                        }
+                    }
+                },
+                replies: {
+                    include: {
+                        commentPost: {
+                            include: {
+                                user: {
+                                    select: {
+                                        id: true,
+                                        username: true,
+                                        name: true,
+                                        ppPath: true
+                                    }
+                                }
+                            }
+                        },
+                        replies: {
+                            include: {
+                                commentPost: {
+                                    include: {
+                                        user: {
+                                            select: {
+                                                id: true,
+                                                username: true,
+                                                name: true,
+                                                ppPath: true
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            orderBy: {
+                                createdAt: 'asc'
+                            }
+                        }
+                    },
+                    orderBy: {
+                        createdAt: 'asc'
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
+            skip: parseInt(skip),
+            take: parseInt(limit)
+        });
+
+        const totalComments = await prisma.commentPost.count({
+            where: {
+                postId: postId,
+                parentId: null
+            }
+        });
+
+        res.status(200).json({
+            comments,
+            pagination: {
+                currentPage: parseInt(page),
+                totalPages: Math.ceil(totalComments / limit),
+                totalComments,
+                hasMore: skip + comments.length < totalComments
+            }
+        });
+    } catch (err) {
+        console.error("Error fetching comments:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+export async function deletePost(req, res) {
+    try {
+        const postId = req.params.id;
+        const { userId } = req.body;
+
+        const post = await prisma.post.findUnique({
+            where: { id: postId }
+        });
+
+        if (!post) {
+            return res.status(404).json({
+                error: "Post not found"
+            });
         }
-    },
 
-    getPostById: async (req, res) => {
-        try {
-            // Récupération de toutes les tâches depuis la base de données
-            const posts = await Post.findById(req.params.id);
-            res.status(200).json(posts);
-        } catch (err) {
-            // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
-            // et l'erreur sous forme de JSON.
-            res.status(500).json(err);
+        if (post.author !== userId) {
+            return res.status(403).json({
+                error: "You can only delete your own posts"
+            });
         }
-    },
 
-    modifyPost: async (req, res) => {
-        try {
-            // Récupération de toutes les tâches depuis la base de données
-            const posts = await Post.findByIdAndUpdate(req.params.id, req.body);
-            res.status(200).json(posts);
-        } catch (err) {
-            // En cas d'erreur, envoi d'une réponse avec un statut 500 (Internal Server Error)
-            // et l'erreur sous forme de JSON.
-            res.status(500).json(err);
+        await prisma.post.delete({
+            where: { id: postId }
+        });
+
+        res.status(200).json({
+            message: "Post deleted successfully"
+        });
+    } catch (err) {
+        console.error("Error deleting post:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+export async function modifyPost(req, res) {
+    try {
+        const postId = req.params.id;
+        const { userId, message } = req.body;
+
+        if (!message) {
+            return res.status(400).json({
+                error: "Message is required"
+            });
         }
-    },
 
-};
+        const post = await prisma.post.findUnique({
+            where: { id: postId }
+        });
+
+        if (!post) {
+            return res.status(404).json({
+                error: "Post not found"
+            });
+        }
+
+        if (post.author !== userId) {
+            return res.status(403).json({
+                error: "You can only edit your own posts"
+            });
+        }
+
+        const updatedPost = await prisma.post.update({
+            where: { id: postId },
+            data: { message },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        name: true,
+                        ppPath: true
+                    }
+                }
+            }
+        });
+
+        res.status(200).json({
+            message: "Post updated successfully",
+            post: updatedPost
+        });
+    } catch (err) {
+        console.error("Error updating post:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+export async function likePost(req, res) {
+    const { postId, userId } = req.body;
+
+    if (!postId || !userId) {
+        return res.status(400).json({
+            error: "postId and userId are required"
+        });
+    }
+
+    try {
+        const postExists = await prisma.post.findUnique({
+            where: { id: postId }
+        });
+
+        if (!postExists) {
+            return res.status(404).json({
+                error: "Post not found"
+            });
+        }
+
+        const userExists = await prisma.user_.findUnique({
+            where: { id: userId }
+        });
+
+        if (!userExists) {
+            return res.status(404).json({
+                error: "User not found"
+            });
+        }
+
+        const existingLike = await prisma.likePost.findUnique({
+            where: {
+                idPost_author: {
+                    idPost: postId,
+                    author: userId
+                }
+            }
+        });
+
+        if (existingLike) {
+            await prisma.likePost.delete({
+                where: {
+                    idPost_author: {
+                        idPost: postId,
+                        author: userId
+                    }
+                }
+            });
+
+            const likeCount = await prisma.likePost.count({
+                where: { idPost: postId }
+            });
+
+            res.status(200).json({
+                message: "Post unliked",
+                liked: false,
+                like_Number: likeCount
+            });
+        } else {
+            await prisma.likePost.create({
+                data: {
+                    idPost: postId,
+                    author: userId
+                }
+            });
+
+            const likeCount = await prisma.likePost.count({
+                where: { idPost: postId }
+            });
+
+            res.status(200).json({
+                message: "Post liked",
+                liked: true,
+                like_Number: likeCount
+            });
+        }
+    } catch (err) {
+        console.error("Error toggling like:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}

@@ -1,28 +1,39 @@
-// Importation du module Express
-const express = require('express');
+import express from 'express';
 
-// Création d'une nouvelle instance de Router pour définir les routes
-const router = express.Router();
 
-// Importe le contrôleur des tags depuis le fichier tag.controller.js
-const tagsController = require('../controllers/tag.controller.js');
+const tagRouter = express.Router();
 
-const requiredFields = require('../middlewares/requiredFields.middleware.js');
+import {
+    createTag, getAllTags, getTagById, getTagByIdTag, modifyTag, deleteTag,
+    getTrendingTags, searchTags, getTagStats, addTagToPost, removeTagFromPost
+} from '../controllers/tag.controller.js'
 
-// Définition d'une route POST pour créer un nouveau tag avec les champs obligatoires
-router.post('/', requiredFields(['name']), tagsController.createTag);
+// import { requiredFields } from '../middlewares/requiredFields.middleware.js'
 
-// Définition d'une route GET pour obtenir tous les tags
-router.get('/', tagsController.getAllTags);
+// tagRouter.post('/', requiredFields(['name']), createTag);
 
-// Définition d'une route GET pour obtenir un tag par son ID
-router.get('/:id', tagsController.getTagById);
+tagRouter.post('/', createTag);
 
-// Définition d'une route PATCH pour modifier un tag existant
-router.patch('/:id', tagsController.modifyTag);
+tagRouter.get('/', getAllTags);
 
-// Définition d'une route DELETE pour supprimer un tag par son ID
-router.delete('/:id', tagsController.deleteTag);
+tagRouter.get('/by-idTag/:idTag', getTagByIdTag);
 
-// Exportation du routeur pour pouvoir l'utiliser dans d'autres fichiers
-module.exports = router;
+tagRouter.get('/trending', getTrendingTags);
+
+tagRouter.get('/search', searchTags);
+
+tagRouter.get('/stats', getTagStats);
+
+// tagRouter.post('/add-to-post', requiredFields(['tagId', 'postId', 'authorId']), addTagToPost);
+
+tagRouter.post('/add-to-post', addTagToPost);
+
+tagRouter.delete('/remove-from-post/:tagId/:postId', removeTagFromPost);
+
+tagRouter.get('/:id', getTagById);
+
+tagRouter.patch('/:id', modifyTag);
+
+tagRouter.delete('/:id', deleteTag);
+
+export default tagRouter;

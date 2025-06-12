@@ -5,6 +5,9 @@ import authMiddleware from './middleware/authMiddleware.js';
 import dotenv from 'dotenv';
 import { authRouter } from './routes/auth.route.js';
 
+import dotenv from "dotenv";
+dotenv.config();
+
 dotenv.config();
 // Création d'une instance de l'application Express
 const app = express();
@@ -17,8 +20,25 @@ const port = process.env.API_PORT
 
 
 
+import tagsRouter from './routes/tag.route.js'
+import postsRouter from './routes/post.route.js'
+import usersRouter from './routes/user.route.js'
+import conversationRouter from './routes/conversation.route.js'
+
 app.use(express.json());
-//app.use('/api/tasks', tasksController.getAllTasks); TODO:FIX by using prisma not mongoose
+
+// app.use((req, res, next) => {
+//     res.setHeader('Access-Control-Allow-Origin', '*');
+//     res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content, Accept, Content-Type, Authorization');
+//     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+//     next();
+// });
+
+app.use('/api/tags', tagsRouter);
+app.use('/api/posts', postsRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/conversations', conversationRouter);
+
 
 app.use('/api', authRouter)
 // Définition d'une route GET pour la racine du site ('/')
@@ -32,26 +52,18 @@ app.get('/', (req, res) => {
 
 
 mongoose
-    // .connect("mongodb://" + process.env.MONGO_HOST + ":" + process.env.MONGO_PORT + "/" + process.env.MONGO_DATABASE_NAME)
-    .connect(`mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_NAME}?authSource=admin`)
+    .connect(process.env.MONGO_URI)
     .then(() => {
-        // Affiche un message de succès lorsque la connexion est établie.
         console.log("MongoDB connected !");
-
-        // Démarre l'application sur le port spécifié.
         app.listen(port, () => {
             console.log(`App listening on port ${port}`);
         });
     })
     .catch((err) => {
-        // Affiche une erreur si la connexion échoue.
         console.log(err);
     });
 
 
-
-// Lancement du serveur pour écouter les requêtes sur le port spécifié
-// Lorsque le serveur démarre, un message est affiché dans la console
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
 });

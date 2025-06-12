@@ -1,28 +1,38 @@
-// Importation du module Express
-const express = require('express');
+import express from 'express';
 
-// Création d'une nouvelle instance de Router pour définir les routes
-const router = express.Router();
+const userRouter = express.Router();
 
-// Importe le contrôleur des utilisateurs depuis le fichier user.controller.js
-const usersController = require('../controllers/user.controller.js');
+import {
+    createUser, getAllUsers, getUserById, getUserByUsername, modifyUser, deleteUser,
+    toggleBlockUser, toggleFollowUser, getUserFollowers, getUserFollowing, getUserInfoById, getUserMessages
+} from '../controllers/user.controller.js'
 
-const requiredFields = require('../middlewares/requiredFields.middleware.js');
+// import { requiredFields } from '../middlewares/requiredFields.middleware.js'
 
-// Définition d'une route POST pour créer un nouvel utilisateur avec les champs obligatoires
-router.post('/', requiredFields(['role', 'username', 'name', 'mail', 'password', 'bio', 'pp', 'language']), usersController.createUser);
+// userRouter.post('/', requiredFields(['username', 'name', 'email', 'password']), createUser);
 
-// Définition d'une route GET pour obtenir tous les utilisateurs
-router.get('/', usersController.getAllUsers);
+userRouter.post('/', createUser);
 
-// Définition d'une route GET pour obtenir un utilisateur par son ID
-router.get('/:id', usersController.getUserById);
+userRouter.get('/', getAllUsers);
 
-// Définition d'une route PATCH pour modifier un utilisateur existant
-router.patch('/:id', usersController.modifyUser);
+userRouter.get('/by-username/:username', getUserByUsername);
 
-// Définition d'une route DELETE pour supprimer un utilisateur par son ID
-router.delete('/:id', usersController.deleteUser);
+userRouter.patch('/:id/toggle-block', toggleBlockUser);
 
-// Exportation du routeur pour pouvoir l'utiliser dans d'autres fichiers
-module.exports = router;
+userRouter.post('/toggle-follow', toggleFollowUser);
+
+userRouter.get('/:id/followers', getUserFollowers);
+
+userRouter.get('/:id/following', getUserFollowing);
+
+userRouter.get('/:id', getUserById);
+
+userRouter.get('/profile-info/:id', getUserInfoById);
+
+userRouter.patch('/:id', modifyUser);
+
+userRouter.delete('/:id', deleteUser);
+
+userRouter.get('/user-messages/:id', getUserMessages);
+
+export default userRouter;
