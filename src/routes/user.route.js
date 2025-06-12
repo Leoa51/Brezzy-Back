@@ -4,7 +4,7 @@ const userRouter = express.Router();
 
 import {
     createUser, getAllUsers, getUserById, getUserByUsername, modifyUser, deleteUser,
-    toggleBlockUser, toggleFollowUser, getUserFollowers, getUserFollowing
+    toggleBlockUser, toggleFollowUser, getUserFollowers, getUserFollowing, getUserInfoById, getUserMessages
 } from '../controllers/user.controller.js'
 
 // import { requiredFields } from '../middlewares/requiredFields.middleware.js'
@@ -27,8 +27,12 @@ userRouter.get('/:id/following', getUserFollowing);
 
 userRouter.get('/:id', getUserById);
 
+userRouter.get('/profile-info/:id', getUserInfoById);
+
 userRouter.patch('/:id', modifyUser);
 
 userRouter.delete('/:id', deleteUser);
+
+userRouter.get('/user-messages/:id', getUserMessages);
 
 export default userRouter;

@@ -10,7 +10,6 @@ export async function createUser(req, res) {
             error: "Username, name, email and password are required"
         });
     }
-
     try {
         const existingUser = await prisma.user_.findFirst({
             where: {
@@ -20,7 +19,6 @@ export async function createUser(req, res) {
                 ]
             }
         });
-
         if (existingUser) {
             return res.status(409).json({
                 error: "User with this email or username already exists"
@@ -174,6 +172,35 @@ export async function getUserById(req, res) {
                         comments: true
                     }
                 }
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                error: "User not found"
+            });
+        }
+
+        res.status(200).json(user);
+    } catch (err) {
+        console.error("Error fetching user:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+export async function getUserInfoById(req, res) {
+    try {
+        const userId = req.params.id;
+
+        const user = await prisma.user_.findUnique({
+            where: { id: userId },
+            select: {
+                username: true,
+                bio: true,
+                ppPath: true,
             }
         });
 
@@ -566,6 +593,106 @@ export async function getUserFollowing(req, res) {
         });
     } catch (err) {
         console.error("Error fetching following:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+
+// export async function getUserMessages(req, res) {
+//     try {
+//         const userId = req.params.id;
+//         const { page = 1, limit = 20 } = req.query;
+//         const skip = (page - 1) * limit;
+//
+//         const messages = await prisma.message.findMany({
+//             where: { receiverId: userId },
+//             include: {
+//                 sender: {
+//                     select: {
+//                         id: true,
+//                         username: true,
+//                         ppPath: true
+//                     }
+//                 }
+//             },
+//             orderBy: {
+//                 createdAt: 'desc'
+//             },
+//             skip: parseInt(skip),
+//             take: parseInt(limit)
+//         });
+//
+//         const totalMessages = await prisma.message.count({
+//             where: { receiverId: userId }
+//         });
+//
+//         res.status(200).json({
+//             messages: messages.map(m => m.sender),
+//             pagination: {
+//                 currentPage: parseInt(page),
+//                 totalPages: Math.ceil(totalMessages / limit),
+//                 totalMessages,
+//                 hasMore: skip + messages.length < totalMessages
+//             }
+//         });
+//     } catch (err) {
+//         console.error("Error fetching messages:", err);
+//         res.status(500).json({
+//             error: "Internal server error",
+//             details: err.message
+//         });
+//     }
+// }
+
+export async function getUserMessages(req, res) {
+    try {
+        const userId = req.params.id;
+        const { page = 1, limit = 20 } = req.query;
+        const skip = (page - 1) * limit;
+
+        const posts = await prisma.post.findMany({
+            where: { author: userId },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        ppPath: true,
+                        name: true
+                    }
+                },
+                _count: {
+                    select: {
+                        likes: true,
+                        commentsOnThis: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
+            skip: parseInt(skip),
+            take: parseInt(limit)
+        });
+
+        const totalPosts = await prisma.post.count({
+            where: { author: userId }
+        });
+
+        res.status(200).json({
+            posts,
+            pagination: {
+                currentPage: parseInt(page),
+                totalPages: Math.ceil(totalPosts / limit),
+                totalPosts,
+                hasMore: skip + posts.length < totalPosts
+            }
+        });
+    } catch (err) {
+        console.error("Error fetching user posts:", err);
         res.status(500).json({
             error: "Internal server error",
             details: err.message
