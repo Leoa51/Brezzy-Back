@@ -1,4 +1,3 @@
- 
 const express = require('express');
  
 const router = express.Router();
@@ -17,8 +16,8 @@ router.get('/:id', postsController.getPostById);
 
 router.patch('/:id', postsController.modifyPost);
 
-router.delete('/:id', postsController.deletePost);
+router.delete('/:id', postsController.deletePost)
 
-
+router.get('/comments/:id', postsController.getPostComments)
 
 module.exports = router;

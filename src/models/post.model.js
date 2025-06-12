@@ -1,6 +1,6 @@
-  
+
 const mongoose = require('mongoose');
-  
+
 const postSchema = new mongoose.Schema({
     message: {
         type: String,
@@ -81,12 +81,12 @@ const postSchema = new mongoose.Schema({
         default: Date.now
     }
 });
-  
+
 postSchema.pre('save', function(next) {
     this.updatedAt = Date.now();
     next();
 });
-  
+
 const Post = mongoose.model('Post', postSchema);
-  
+
 module.exports = Post;

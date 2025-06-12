@@ -20,7 +20,6 @@ model User_ {
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
   tagAssocs    Asso11[]
-  comments     CommentPost[]
   followers    Follow[]       @relation("FollowedUser")
   following    Follow[]       @relation("FollowerUser")
   images       Image[]
@@ -39,32 +38,36 @@ model User_ {
 }
 
 model Post {
-  id           String        @id @default(cuid())
+  id           String       @id @default(cuid())
   author       String
   message      String
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
   tags         Asso11[]
-  comments     CommentPost[]
   likes        LikePost[]
-  user         User_         @relation(fields: [author], references: [id], onDelete: Cascade)
+  user         User_        @relation(fields: [author], references: [id], onDelete: Cascade)
   reports      ReportPost[]
   linkImages   LinkImg[]
   linkVideos   LinkVid[]
   publications Publish[]
 
+  commentsOnThis CommentPost[] @relation("PostCommented")
+  thisIsComment  CommentPost?  @relation("CommentPost")
+
   @@map("Post_1")
 }
 
 model CommentPost {
-  id         String   @id @default(cuid())
-  author     String
-  idPost     String   @map("ID_1")
-  authorPost String   @map("author_1")
-  content    String
-  createdAt  DateTime @default(now()) @map("created_at")
-  post       Post     @relation(fields: [idPost], references: [id], onDelete: Cascade)
-  user       User_    @relation(fields: [author], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  commentId String   @unique @map("comment_id")
+  postId    String   @map("post_id")
+  parentId  String?  @map("parent_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  commentPost  Post          @relation("CommentPost", fields: [commentId], references: [id], onDelete: Cascade)
+  originalPost Post          @relation("PostCommented", fields: [postId], references: [id], onDelete: Cascade)
+  parent       CommentPost?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies      CommentPost[] @relation("CommentReplies")
 
   @@map("Comment_post_1")
 }
