@@ -50,3 +50,16 @@ export async function modifyConversation (req, res)  {
         res.status(500).json(err);
     }
 }
+
+export async function addMessageToConversation (req, res)  {
+    const { message } = req.body;
+    if (!message) return res.status(400).send("message is required");
+    try {
+        const conversations = await Conversation.findById(req.params.id);
+        conversations.messages.push(message);
+        await conversations.save();
+        res.status(200).json(conversations);
+    } catch (err) {
+        res.status(500).json(err);
+    }
+}
