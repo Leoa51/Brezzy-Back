@@ -1,23 +1,27 @@
-const express = require('express');
- 
-const router = express.Router();
- 
-const postsController = require('../controllers/post.controller.js');
+import express from 'express';
 
-const requiredFields = require('../middlewares/requiredFields.middleware.js');
+const postRouter = express.Router();
 
-router.post('/', requiredFields(['message', 'author']), postsController.createPost);
+import {
+    createPost, getAllPosts, getPostById, modifyPost, deletePost, getPostComments, likePost
+} from '../controllers/post.controller.js'
 
-router.post('/', postsController.createPost);
+// import { requiredFields } from '../middlewares/requiredFields.middleware.js'
 
-router.get('/', postsController.getAllPosts);
+// postRouter.post('/', requiredFields(['message', 'author']), createPost);
 
-router.get('/:id', postsController.getPostById);
+postRouter.post('/', createPost);
 
-router.patch('/:id', postsController.modifyPost);
+postRouter.get('/', getAllPosts);
 
-router.delete('/:id', postsController.deletePost)
+postRouter.get('/:id', getPostById);
 
-router.get('/comments/:id', postsController.getPostComments)
+postRouter.patch('/:id', modifyPost);
 
-module.exports = router;
+postRouter.delete('/:id', deletePost);
+
+postRouter.get('/comments/:postId', getPostComments);
+
+postRouter.post('/like', likePost);
+
+export default postRouter;

@@ -1,31 +1,39 @@
-const express = require('express');
- 
-const router = express.Router();
- 
-const tagsController = require('../controllers/tag.controller.js');
+import express from 'express';
 
-const requiredFields = require('../middlewares/requiredFields.middleware.js');
- 
-router.post('/', requiredFields(['name']), tagsController.createTag);
- 
-router.get('/', tagsController.getAllTags);
 
-router.get('/by-idTag/:idTag', tagsController.getTagByIdTag);
+const tagRouter = express.Router();
 
-router.get('/trending', tagsController.getTrendingTags);
+import {
+    createTag, getAllTags, getTagById, getTagByIdTag, modifyTag, deleteTag,
+    getTrendingTags, searchTags, getTagStats, addTagToPost, removeTagFromPost
+} from '../controllers/tag.controller.js'
 
-router.get('/search', tagsController.searchTags);
+// import { requiredFields } from '../middlewares/requiredFields.middleware.js'
 
-router.get('/stats', tagsController.getTagStats);
+// tagRouter.post('/', requiredFields(['name']), createTag);
 
-router.post('/add-to-post', requiredFields(['tagId', 'postId', 'authorId']), tagsController.addTagToPost);
+tagRouter.post('/', createTag);
 
-router.delete('/remove-from-post/:tagId/:postId', tagsController.removeTagFromPost);
+tagRouter.get('/', getAllTags);
 
-router.get('/:id', tagsController.getTagById);
- 
-router.patch('/:id', tagsController.modifyTag);
- 
-router.delete('/:id', tagsController.deleteTag);
- 
-module.exports = router;
+tagRouter.get('/by-idTag/:idTag', getTagByIdTag);
+
+tagRouter.get('/trending', getTrendingTags);
+
+tagRouter.get('/search', searchTags);
+
+tagRouter.get('/stats', getTagStats);
+
+// tagRouter.post('/add-to-post', requiredFields(['tagId', 'postId', 'authorId']), addTagToPost);
+
+tagRouter.post('/add-to-post', addTagToPost);
+
+tagRouter.delete('/remove-from-post/:tagId/:postId', removeTagFromPost);
+
+tagRouter.get('/:id', getTagById);
+
+tagRouter.patch('/:id', modifyTag);
+
+tagRouter.delete('/:id', deleteTag);
+
+export default tagRouter;

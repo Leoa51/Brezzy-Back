@@ -1,22 +1,24 @@
  
-const express = require('express');
+ import express from 'express';
+const conversationRouter = express.Router();
  
-const router = express.Router();
- 
-const conversationsController = require('../controllers/conversation.controller.js');
 
-const requiredFields = require('../middlewares/requiredFields.middleware.js');
+import {
+    createConversation, deleteConversation, getAllConversations, getConversationById, modifyConversation
+} from '../controllers/conversation.controller.js'
 
-router.post('/', requiredFields(['participant']), conversationsController.createConversation);
+// import { requiredFields } from '../middlewares/requiredFields.middleware.js'
 
-router.post('/', conversationsController.createConversation);
- 
-router.get('/', conversationsController.getAllConversations);
- 
-router.get('/:id', conversationsController.getConversationById);
+// conversationRouter.post('/', requiredFields(['participant']), createConversation);
 
-router.patch('/:id', conversationsController.modifyConversation);
+conversationRouter.post('/', createConversation);
+
+conversationRouter.get('/', getAllConversations);
+
+conversationRouter.get('/:id', getConversationById);
+
+conversationRouter.patch('/:id', modifyConversation);
+
+conversationRouter.delete('/:id', deleteConversation);
  
-router.delete('/:id', conversationsController.deleteConversation);
- 
-module.exports = router;
+export default conversationRouter;

@@ -1,29 +1,34 @@
-const express = require('express');
- 
-const router = express.Router();
- 
-const usersController = require('../controllers/user.controller.js');
+import express from 'express';
 
-const requiredFields = require('../middlewares/requiredFields.middleware.js');
- 
-router.post('/', requiredFields(['role', 'username', 'name', 'email', 'password', 'bio', 'ppPath', 'language']), usersController.createUser);
- 
-router.get('/', usersController.getAllUsers);
+const userRouter = express.Router();
 
-router.get('/by-username/:username', usersController.getUserByUsername);
+import {
+    createUser, getAllUsers, getUserById, getUserByUsername, modifyUser, deleteUser,
+    toggleBlockUser, toggleFollowUser, getUserFollowers, getUserFollowing
+} from '../controllers/user.controller.js'
 
-router.patch('/:id/toggle-block', usersController.toggleBlockUser);
+// import { requiredFields } from '../middlewares/requiredFields.middleware.js'
 
-router.post('/toggle-follow', usersController.toggleFollowUser);
+// userRouter.post('/', requiredFields(['username', 'name', 'email', 'password']), createUser);
 
-router.get('/:id/followers', usersController.getUserFollowers);
+userRouter.post('/', createUser);
 
-router.get('/:id/following', usersController.getUserFollowing);
- 
-router.get('/:id', usersController.getUserById);
- 
-router.patch('/:id', usersController.modifyUser);
- 
-router.delete('/:id', usersController.deleteUser);
- 
-module.exports = router;
+userRouter.get('/', getAllUsers);
+
+userRouter.get('/by-username/:username', getUserByUsername);
+
+userRouter.patch('/:id/toggle-block', toggleBlockUser);
+
+userRouter.post('/toggle-follow', toggleFollowUser);
+
+userRouter.get('/:id/followers', getUserFollowers);
+
+userRouter.get('/:id/following', getUserFollowing);
+
+userRouter.get('/:id', getUserById);
+
+userRouter.patch('/:id', modifyUser);
+
+userRouter.delete('/:id', deleteUser);
+
+export default userRouter;

@@ -9,11 +9,12 @@ datasource db {
 
 model User_ {
   id           String         @id @default(cuid())
+  firstName    String
   name         String
   email        String         @unique
-  passwordHash String         @map("password_hash")
+  passwordHash String
   bio          String?
-  ppPath       String?        @map("pp_path")
+  ppPath       String?
   username     String         @unique
   language     String?
   isBlocked    Boolean        @default(false) @map("is_blocked")
@@ -34,7 +35,7 @@ model User_ {
   linkVideos   LinkVid[]
   publications Publish[]
 
-  @@map("User_1")
+  @@map("User")
 }
 
 model Post {
@@ -53,23 +54,19 @@ model Post {
 
   commentsOnThis CommentPost[] @relation("PostCommented")
   thisIsComment  CommentPost?  @relation("CommentPost")
-
-  @@map("Post_1")
 }
 
 model CommentPost {
   id        String   @id @default(cuid())
   commentId String   @unique @map("comment_id")
-  postId    String   @map("post_id")
-  parentId  String?  @map("parent_id")
-  createdAt DateTime @default(now()) @map("created_at")
+  postId    String
+  parentId  String?
+  createdAt DateTime @default(now())
 
   commentPost  Post          @relation("CommentPost", fields: [commentId], references: [id], onDelete: Cascade)
   originalPost Post          @relation("PostCommented", fields: [postId], references: [id], onDelete: Cascade)
   parent       CommentPost?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies      CommentPost[] @relation("CommentReplies")
-
-  @@map("Comment_post_1")
 }
 
 model LikePost {
@@ -81,148 +78,129 @@ model LikePost {
   user      User_    @relation(fields: [author], references: [id], onDelete: Cascade)
 
   @@unique([idPost, author])
-  @@map("Like_post_1")
 }
 
 model ReportPost {
   id        String   @id @default(cuid())
-  idPost    String   @map("ID_1")
+  idPost    String
   author    String
   reason    String?
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now())
   post      Post     @relation(fields: [idPost], references: [id], onDelete: Cascade)
   user      User_    @relation(fields: [author], references: [id], onDelete: Cascade)
-
-  @@map("Report_post_1")
 }
 
 model ReportUser {
   id           String   @id @default(cuid())
-  reportedId   String   @map("id_1")
-  reporterId   String   @map("reporter_id")
+  reportedId   String
+  reporterId   String
   reason       String?
   createdAt    DateTime @default(now()) @map("created_at")
   reportedUser User_    @relation("ReportedUser", fields: [reportedId], references: [id], onDelete: Cascade)
   reporterUser User_    @relation("ReporterUser", fields: [reporterId], references: [id], onDelete: Cascade)
 
   @@unique([reportedId, reporterId])
-  @@map("Report_user_1")
 }
 
 model Follow {
   id         String   @id @default(cuid())
-  followerId String   @map("id_1")
-  followedId String   @map("followed_id")
-  createdAt  DateTime @default(now()) @map("created_at")
+  followerId String
+  followedId String
+  createdAt  DateTime @default(now())
   followed   User_    @relation("FollowedUser", fields: [followedId], references: [id], onDelete: Cascade)
   follower   User_    @relation("FollowerUser", fields: [followerId], references: [id], onDelete: Cascade)
 
   @@unique([followerId, followedId])
-  @@map("Follow_1")
 }
 
 model Publish {
   id        String   @id @default(cuid())
-  idPost    String   @map("ID_1")
+  idPost    String
   author    String
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now())
   post      Post     @relation(fields: [idPost], references: [id], onDelete: Cascade)
   user      User_    @relation(fields: [author], references: [id], onDelete: Cascade)
-
-  @@map("publish_1")
 }
 
 model Tag {
   id        String   @id @default(cuid())
-  idTag     String   @unique @map("id_tag")
+  idTag     String   @unique
   name      String
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now())
   posts     Asso11[]
-
-  @@map("tag_1")
 }
 
 model Asso11 {
   id     String @id @default(cuid())
-  idTag  String @map("id_tag")
-  idPost String @map("ID")
+  idTag  String
+  idPost String
   author String
   post   Post   @relation(fields: [idPost], references: [id], onDelete: Cascade)
   user   User_  @relation(fields: [author], references: [id], onDelete: Cascade)
   tag    Tag    @relation(fields: [idTag], references: [idTag], onDelete: Cascade)
 
   @@unique([idTag, idPost])
-  @@map("Asso_11_1")
 }
 
 model Image {
   id         String    @id @default(cuid())
-  cdnPath    String    @map("cdn_path")
+  cdnPath    String
   author     String
-  createdAt  DateTime  @default(now()) @map("created_at")
+  createdAt  DateTime  @default(now())
   user       User_     @relation(fields: [author], references: [id], onDelete: Cascade)
   linkImages LinkImg[]
-
-  @@map("Image_1")
 }
 
 model Video {
   id         String    @id @default(cuid())
-  cdnPath    String    @map("cdn_path")
+  cdnPath    String
   author     String
-  createdAt  DateTime  @default(now()) @map("created_at")
+  createdAt  DateTime  @default(now())
   user       User_     @relation(fields: [author], references: [id], onDelete: Cascade)
   linkVideos LinkVid[]
-
-  @@map("Video_1")
 }
 
 model LinkImg {
   id         String   @id @default(cuid())
-  imageId    String   @map("ID")
-  postAuthor String   @map("author")
-  linkAuthor String   @map("id_1")
-  createdAt  DateTime @default(now()) @map("created_at")
+  imageId    String
+  postAuthor String
+  linkAuthor String
+  createdAt  DateTime @default(now())
   image      Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
   post       Post     @relation(fields: [postAuthor], references: [id], onDelete: Cascade)
   user       User_    @relation(fields: [linkAuthor], references: [id], onDelete: Cascade)
 
   @@unique([imageId, postAuthor])
-  @@map("link_img_1")
 }
 
 model LinkVid {
   id         String   @id @default(cuid())
-  videoId    String   @map("ID")
-  postAuthor String   @map("author")
-  linkAuthor String   @map("id_1")
+  videoId    String
+  postAuthor String
+  linkAuthor String
   createdAt  DateTime @default(now()) @map("created_at")
   video      Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
   post       Post     @relation(fields: [postAuthor], references: [id], onDelete: Cascade)
   user       User_    @relation(fields: [linkAuthor], references: [id], onDelete: Cascade)
 
   @@unique([videoId, postAuthor])
-  @@map("link_vid_1")
 }
 
 model Conversation {
   id           String         @id @default(cuid())
-  createdAt    DateTime       @default(now()) @map("created_at")
-  updatedAt    DateTime       @updatedAt @map("updated_at")
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
   participants Participants[]
-
-  @@map("Conversation_1")
 }
 
 model Participants {
   id             String       @id @default(cuid())
-  conversationId String       @map("conversation_id")
-  userId1        String       @map("id_1")
-  userId2        String       @map("id_2")
-  createdAt      DateTime     @default(now()) @map("created_at")
+  conversationId String
+  userId1        String
+  userId2        String
+  createdAt      DateTime     @default(now())
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user           User_        @relation(fields: [userId1], references: [id], onDelete: Cascade)
 
   @@unique([conversationId, userId1])
-  @@map("Participants_1")
 }

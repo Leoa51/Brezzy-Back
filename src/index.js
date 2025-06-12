@@ -1,19 +1,33 @@
-const express = require('express');
+import express from "express";
 
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
-require('dotenv').config();
+import dotenv from "dotenv";
+dotenv.config();
  
 const app = express();
  
 const port = 3000;
 
+import tagsRouter from './routes/tag.route.js'
+import postsRouter from './routes/post.route.js'
+import usersRouter from './routes/user.route.js'
+import conversationRouter from './routes/conversation.route.js'
+
 app.use(express.json());
 
-app.use('/api/tags', require('./routes/tag.route'));
-app.use('/api/posts', require('./routes/post.route'));
-app.use('/api/users', require('./routes/user.route'));
-app.use('/api/conversations', require('./routes/conversation.route'));
+// app.use((req, res, next) => {
+//     res.setHeader('Access-Control-Allow-Origin', '*');
+//     res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content, Accept, Content-Type, Authorization');
+//     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+//     next();
+// });
+
+app.use('/api/tags', tagsRouter);
+app.use('/api/posts', postsRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/conversations', conversationRouter);
+
 
 app.get('/', (req, res) => {
     res.send('Hello World!');
