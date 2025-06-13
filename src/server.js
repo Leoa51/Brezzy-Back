@@ -33,7 +33,7 @@ const io = new Server(server, {
 });
 
 server.listen(3101, () => {
-    console.log(`Server is running on port `);
+    console.log(`Server is running on port 3101 `);
 });
 
 

@@ -8,7 +8,7 @@ export default async function (req, res) {
     const { email, password } = req.body;
 
     try {
-        const user = await prisma.user.findUnique({
+        const user = await prisma.user_.findUnique({
             where: {
                 email: email.toLowerCase(),
             }
@@ -25,6 +25,7 @@ export default async function (req, res) {
         const token = jwt.sign({ email: user.email, _id: user.id, }, process.env.JWT_SECRET, { expiresIn: '1h' });
         res.status(200).json({ token, message: 'Logged in successfully' });
     } catch (err) {
+        console.log(err)
         res.status(500).json({ message: 'Error logging in', error: err.message });
     }
 };
