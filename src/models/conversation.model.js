@@ -1,14 +1,16 @@
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
+import mongoose from "mongoose";
+
 
 const conversationSchema = new mongoose.Schema({
     participants: [{
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'User',
         required: true
     }],
     messages: [{
         author: {
-            type: mongoose.Schema.Types.ObjectId,
+            type: String,
             ref: 'User',
             required: true
         },
@@ -22,11 +24,11 @@ const conversationSchema = new mongoose.Schema({
             type: Date,
             default: Date.now
         },
-        pictureUrl: {
+        picture: {
             type: String,
             default: ''
         },
-        videoUrl: {
+        video: {
             type: String,
             default: ''
         },
@@ -56,4 +58,7 @@ conversationSchema.index({ participants: 1 });
 conversationSchema.index({ lastMessageAt: -1 });
 
 const Conversation = mongoose.model('Conversation', conversationSchema);
-module.exports = Conversation;
+
+// module.exports = Conversation;
+
+export default Conversation;

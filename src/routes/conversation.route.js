@@ -1,14 +1,27 @@
+
 import express from 'express';
-import conversationsController from '../controllers/conversation.controller.js';
-import { body } from 'express-validator';
-const Conversationrouter = express.Router();
+const conversationRouter = express.Router();
 
-Conversationrouter.post('/',body('participants').notEmpty().isArray(), conversationsController.createConversation);
 
-Conversationrouter.get('/', conversationsController.getAllConversations);
-Conversationrouter.get('/:id', conversationsController.getConversationById);
-Conversationrouter.patch('/:id', conversationsController.modifyConversation);
-Conversationrouter.delete('/:id', conversationsController.deleteConversation);
+import {
+    addMessageToConversation,
+    createConversation, deleteConversation, getAllConversations, getConversationById, modifyConversation
+} from '../controllers/conversation.controller.js'
 
-// Exportation du routeur
-export default Conversationrouter;
+// import { requiredFields } from '../middlewares/requiredFields.middleware.js'
+
+// conversationRouter.post('/', requiredFields(['participant']), createConversation);
+
+conversationRouter.post('/', createConversation);
+
+conversationRouter.get('/', getAllConversations);
+
+conversationRouter.get('/:id', getConversationById);
+
+conversationRouter.patch('/:id', modifyConversation);
+
+conversationRouter.delete('/:id', deleteConversation);
+
+conversationRouter.post('/add-message/:id', addMessageToConversation);
+
+export default conversationRouter;

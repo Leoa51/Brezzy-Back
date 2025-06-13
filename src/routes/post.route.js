@@ -1,18 +1,27 @@
 import express from 'express';
-import { body } from 'express-validator';
-import postsController from '../controllers/post.controller.js';
 
-const router = express.Router();
+const postRouter = express.Router();
 
+import {
+  createPost, getAllPosts, getPostById, modifyPost, deletePost, getPostComments, likePost
+} from '../controllers/post.controller.js'
 
+// import { requiredFields } from '../middlewares/requiredFields.middleware.js'
 
-// Routes
-router.post('/',body('message').notEmpty().isString().trim(),
-  body('author').notEmpty().isInt(), postsController.createPost);
+// postRouter.post('/', requiredFields(['message', 'author']), createPost);
 
-router.get('/', postsController.getAllPosts);
-router.get('/:id', postsController.getPostById);
-router.patch('/:id', postsController.modifyPost);
-router.delete('/:id', postsController.deletePost);
+postRouter.post('/', createPost);
 
-export default router;
+postRouter.get('/', getAllPosts);
+
+postRouter.get('/:id', getPostById);
+
+postRouter.patch('/:id', modifyPost);
+
+postRouter.delete('/:id', deletePost);
+
+postRouter.get('/comments/:postId', getPostComments);
+
+postRouter.post('/like', likePost);
+
+export default postRouter;

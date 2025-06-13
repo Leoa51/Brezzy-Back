@@ -5,3 +5,5 @@ package-lock.json
 data/
 
 /src/prisma
+
+/src/generated/prisma
