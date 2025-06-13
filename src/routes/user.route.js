@@ -3,8 +3,20 @@ import express from 'express';
 const userRouter = express.Router();
 
 import {
-    createUser, getAllUsers, getUserById, getUserByUsername, modifyUser, deleteUser,
-    toggleBlockUser, toggleFollowUser, getUserFollowers, getUserFollowing, getUserInfoById, getUserMessages
+    createUser,
+    getAllUsers,
+    getUserById,
+    getUserByUsername,
+    modifyUser,
+    deleteUser,
+    toggleBlockUser,
+    toggleFollowUser,
+    getUserFollowers,
+    getUserFollowing,
+    getUserInfoById,
+    getUserMessages,
+    unblockUser,
+    blockUser
 } from '../controllers/user.controller.js'
 
 // import { requiredFields } from '../middlewares/requiredFields.middleware.js'
@@ -34,5 +46,9 @@ userRouter.patch('/:id', modifyUser);
 userRouter.delete('/:id', deleteUser);
 
 userRouter.get('/user-messages/:id', getUserMessages);
+
+userRouter.post('/block', blockUser);
+
+userRouter.post('/unblock', unblockUser);
 
 export default userRouter;

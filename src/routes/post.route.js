@@ -3,7 +3,7 @@ import express from 'express';
 const postRouter = express.Router();
 
 import {
-    createPost, getAllPosts, getPostById, modifyPost, deletePost, getPostComments, likePost
+    createPost, getAllPosts, getPostById, modifyPost, deletePost, getPostComments, likePost, reportPost
 } from '../controllers/post.controller.js'
 
 // import { requiredFields } from '../middlewares/requiredFields.middleware.js'
@@ -23,5 +23,7 @@ postRouter.delete('/:id', deletePost);
 postRouter.get('/comments/:postId', getPostComments);
 
 postRouter.post('/like', likePost);
+
+postRouter.post('/report', reportPost);
 
 export default postRouter;

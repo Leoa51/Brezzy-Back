@@ -26,8 +26,8 @@ export async function createUser(req, res) {
         }
 
         // Hash password
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        // const saltRounds = 10;
+        // const hashedPassword = await bcrypt.hash(password, saltRounds);
 
         const newUser = await prisma.user_.create({
             data: {
@@ -35,7 +35,7 @@ export async function createUser(req, res) {
                 name,
                 firstName,
                 email,
-                passwordHash: hashedPassword,
+                passwordHash: password,
                 bio: bio || null,
                 ppPath: ppPath || null,
                 language: language || null,
@@ -139,6 +139,7 @@ export async function getUserById(req, res) {
                 id: true,
                 username: true,
                 name: true,
+                firstName: true,
                 email: true,
                 bio: true,
                 ppPath: true,
@@ -154,22 +155,26 @@ export async function getUserById(req, res) {
                         _count: {
                             select: {
                                 likes: true,
-                                comments: true
+                                commentsOnThis: true,
+                                tags: true,
+                                reports: true,
+                                linkImages: true,
+                                linkVideos: true,
+                                publications: true
                             }
                         }
                     },
                     orderBy: {
                         createdAt: 'desc'
                     },
-                    take: 10 // 10 last posts
+                    take: 10
                 },
                 _count: {
                     select: {
                         posts: true,
                         followers: true,
                         following: true,
-                        likes: true,
-                        comments: true
+                        likes: true
                     }
                 }
             }
@@ -190,6 +195,8 @@ export async function getUserById(req, res) {
         });
     }
 }
+
+
 
 export async function getUserInfoById(req, res) {
     try {
@@ -699,6 +706,104 @@ export async function getUserMessages(req, res) {
         });
     }
 }
+
+
+
+
+export async function blockUser(req, res) {
+    try {
+        const userIdToBlock = req.body.id;
+
+        const userExists = await prisma.user_.findUnique({
+            where: { id: userIdToBlock },
+            select: { id: true, username: true, isBlocked: true }
+        });
+
+        if (!userExists) {
+            return res.status(404).json({
+                error: "User not found"
+            });
+        }
+
+        if (userExists.isBlocked) {
+            return res.status(400).json({
+                error: "User is already blocked"
+            });
+        }
+
+        const blockedUser = await prisma.user_.update({
+            where: { id: userIdToBlock },
+            data: { isBlocked: true },
+            select: {
+                id: true,
+                username: true,
+                name: true,
+                isBlocked: true,
+                updatedAt: true
+            }
+        });
+
+        res.status(200).json({
+            message: "User blocked successfully",
+            user: blockedUser
+        });
+    } catch (err) {
+        console.error("Error blocking user:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+export async function unblockUser(req, res) {
+    try {
+        const userIdToUnblock = req.body.id;
+
+        const userExists = await prisma.user_.findUnique({
+            where: { id: userIdToUnblock },
+            select: { id: true, username: true, isBlocked: true }
+        });
+
+        if (!userExists) {
+            return res.status(404).json({
+                error: "User not found"
+            });
+        }
+
+        if (!userExists.isBlocked) {
+            return res.status(400).json({
+                error: "User is not blocked"
+            });
+        }
+
+        const unblockedUser = await prisma.user_.update({
+            where: { id: userIdToUnblock },
+            data: { isBlocked: false },
+            select: {
+                id: true,
+                username: true,
+                name: true,
+                isBlocked: true,
+                updatedAt: true
+            }
+        });
+
+        res.status(200).json({
+            message: "User unblocked successfully",
+            user: unblockedUser
+        });
+    } catch (err) {
+        console.error("Error unblocking user:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+
+
 
 process.on('beforeExit', async () => {
     await prisma.$disconnect();

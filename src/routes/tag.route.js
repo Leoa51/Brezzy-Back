@@ -5,7 +5,7 @@ const tagRouter = express.Router();
 
 import {
     createTag, getAllTags, getTagById, getTagByIdTag, modifyTag, deleteTag,
-    getTrendingTags, searchTags, getTagStats, addTagToPost, removeTagFromPost
+    getTrendingTags, searchTags, getTagStats, addTagToPost, removeTagFromPost, getTaggedPosts
 } from '../controllers/tag.controller.js'
 
 // import { requiredFields } from '../middlewares/requiredFields.middleware.js'
@@ -35,5 +35,7 @@ tagRouter.get('/:id', getTagById);
 tagRouter.patch('/:id', modifyTag);
 
 tagRouter.delete('/:id', deleteTag);
+
+tagRouter.get('/posts/:idTag', getTaggedPosts);
 
 export default tagRouter;
