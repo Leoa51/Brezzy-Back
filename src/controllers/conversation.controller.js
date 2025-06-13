@@ -36,6 +36,7 @@ export async function deleteConversation(req, res) {
 export async function getConversationById(req, res) {
   try {
     const conversations = await Conversation.findById(req.params.id);
+    if (!conversations.participants.includes(req.user.id)) return res.status(403).send("You are not in the conversation ")
     res.status(200).json(conversations);
   } catch (err) {
     res.status(500).json(err);

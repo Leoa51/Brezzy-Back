@@ -41,7 +41,7 @@ server.listen(3101, () => {
 io.on('connection', (socket) => {
 
     //map userIdn to socket.id
-    const userId = 1;
+    const userId = 'cmbujdzk30000c7bc6yhb5flv';
     usersSocketIds[userId] = socket.id;
     console.log(`User ${userId} connected with socket ID ${socket.id}`);
 
@@ -70,25 +70,28 @@ io.on('connection', (socket) => {
         });
     })
     socket.on('new_message', async (data) => {
-        const { convId, content, pictureUrl, videoUrl } = data;
-        const author = socket.userId;
+        const { conversationId, message, pictureUrl, videoUrl } = data;
+        const author = "cmbujdzk30000c7bc6yhb5flv";
 
-        if (!convId || !content || !author) {
+        console.log(usersSocketIds)
+        console.log(data)
+
+
+        if (!conversationId) {
             console.error('Missing data to send message');
             return;
         }
 
         try {
-            const conversation = await Conversation.findById(convId);
+            const conversation = await Conversation.findById(conversationId);
 
             if (!conversation) {
-                console.error(`Conversation with ID ${convId} not found`);
+                console.error(`Conversation with ID ${conversationId} not found`);
                 return;
             }
-
             const newMessage = {
                 author,
-                content,
+                content: message,
                 pictureUrl: pictureUrl || '',
                 videoUrl: videoUrl || '',
                 isRead: false,
@@ -100,11 +103,12 @@ io.on('connection', (socket) => {
             await conversation.save();
 
             const userIds = conversation.participants.map(p => p.toString());
-
             userIds.forEach(userId => {
-                if (usersSocketIds[userId]) {
-                    io.to(usersSocketIds[userId]).emit('message', {
-                        convId,
+                console.log(author)
+                if (usersSocketIds[author]) {
+                    console.log('in')
+                    io.to(usersSocketIds[author]).emit('message', {
+                        conversationId,
                         message: newMessage
                     });
                 }
