@@ -8,12 +8,12 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "websocket": "nodemon src/server.js",
-    "prisma": "npx prisma db push"
+    "websocket": "nodemon src/server.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@faker-js/faker": "^9.8.0",
     "@prisma/client": "^6.9.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
@@ -26,5 +26,12 @@
     "nodemon": "^3.1.10",
     "prisma": "^6.9.0",
     "socket.io": "^4.8.1"
+  },
+  "prisma": {
+    "push": "npx prisma db push",
+    "seed": "node prisma/seed.js"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^3.0.0"
   }
 }

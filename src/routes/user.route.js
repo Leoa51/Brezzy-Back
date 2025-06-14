@@ -7,9 +7,6 @@ import {
     toggleBlockUser, toggleFollowUser, getUserFollowers, getUserFollowing, getUserInfoById, getUserMessages
 } from '../controllers/user.controller.js'
 
-// import { requiredFields } from '../middlewares/requiredFields.middleware.js'
-
-// userRouter.post('/', requiredFields(['username', 'name', 'email', 'password']), createUser);
 
 userRouter.post('/', createUser);
 
