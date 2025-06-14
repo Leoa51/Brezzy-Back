@@ -1,9 +1,14 @@
 import { PrismaClient } from '@prisma/client';
+import { validationResult } from 'express-validator';
 const prisma = new PrismaClient();
 
 export async function createPost(req, res) {
-    const { message, author, originalPostId, parentCommentId } = req.body;
-
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+    const { message, originalPostId, parentCommentId } = req.body;
+    author = req.user
     if (!message || !author) {
         return res.status(400).json({
             error: "Message and author are required"
@@ -82,7 +87,11 @@ export async function createPost(req, res) {
     }
 }
 
-export async function getAllPosts(req, res) {
+export async function getAllPosts(req, res) { //TODO: Create root to get all post from a user & all post from followed 
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
     try {
         const posts = await prisma.post.findMany({
             where: {
@@ -120,6 +129,10 @@ export async function getAllPosts(req, res) {
 }
 
 export async function getPostById(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
     try {
         const postId = req.params.id;
 
@@ -172,6 +185,10 @@ export async function getPostById(req, res) {
 }
 
 export async function getPostComments(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
     try {
         const { postId } = req.params;
         const { page = 1, limit = 20 } = req.query;
@@ -267,9 +284,13 @@ export async function getPostComments(req, res) {
 }
 
 export async function deletePost(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
     try {
         const postId = req.params.id;
-        const { userId } = req.body;
+        const { user } = req.body;
 
         const post = await prisma.post.findUnique({
             where: { id: postId }
@@ -281,7 +302,8 @@ export async function deletePost(req, res) {
             });
         }
 
-        if (post.author !== userId) {
+        if (post.author !== user.id
+        ) {
             return res.status(403).json({
                 error: "You can only delete your own posts"
             });
@@ -304,9 +326,13 @@ export async function deletePost(req, res) {
 }
 
 export async function modifyPost(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
     try {
         const postId = req.params.id;
-        const { userId, message } = req.body;
+        const { user, message } = req.body;
 
         if (!message) {
             return res.status(400).json({
@@ -324,7 +350,7 @@ export async function modifyPost(req, res) {
             });
         }
 
-        if (post.author !== userId) {
+        if (post.author !== user.id) {
             return res.status(403).json({
                 error: "You can only edit your own posts"
             });
@@ -359,6 +385,10 @@ export async function modifyPost(req, res) {
 }
 
 export async function likePost(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
     const { postId, userId } = req.body;
 
     if (!postId || !userId) {
