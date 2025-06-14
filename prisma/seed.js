@@ -27,13 +27,13 @@ async function main() {
     await prisma.tag.deleteMany();
     await prisma.user_.deleteMany();
 
-    console.log('👥 Création de 100 utilisateurs...');
+    console.log('Création de 100 utilisateurs...');
     const users = [];
 
     for (let i = 0; i < 100; i++) {
-        const firstName = faker.name.firstName();
-        const lastName = faker.name.lastName();
-        const username = faker.internet.userName(firstName, lastName).toLowerCase();
+        const firstName = faker.person.firstName();
+        const lastName = faker.person.lastName();
+        const username = faker.internet.username(firstName, lastName).toLowerCase();
         const email = faker.internet.email(firstName, lastName).toLowerCase();
         const passwordHash = await bcrypt.hash('password123', 10);
 
@@ -55,7 +55,7 @@ async function main() {
         users.push(user);
     }
 
-    console.log('🏷️ Création de 100 tags...');
+    console.log('Création de 100 tags...');
     const tags = [];
     const tagNames = [
         'food', 'recipes', 'baking', 'desserts', 'healthy-eating', 'vegan', 'vegetarian',
@@ -88,7 +88,7 @@ async function main() {
         tags.push(tag);
     }
 
-    console.log('📝 Création de 10000 posts...');
+    console.log('Création de 10000 posts...');
     const posts = [];
 
     const messageTemplates = [
@@ -130,11 +130,11 @@ async function main() {
         }
     }
 
-    console.log('🔗 Création des associations posts-tags...');
+    console.log('Création des associations posts-tags...');
 
     for (let i = 0; i < posts.length; i++) {
         const post = posts[i];
-        const numTags = faker.datatype.number({ min: 1, max: 5 });
+        const numTags = faker.number.int({ min: 1, max: 5 });
         const selectedTags = faker.helpers.arrayElements(tags, numTags);
 
         for (const tag of selectedTags) {
@@ -155,7 +155,7 @@ async function main() {
         }
     }
 
-    console.log('❤️ Création des likes...');
+    console.log('Création des likes...');
     const likesCount = Math.floor(posts.length * 0.3);
 
     for (let i = 0; i < likesCount; i++) {
@@ -173,7 +173,7 @@ async function main() {
         }
     }
 
-    console.log('👥 Création des relations de suivi...');
+    console.log('Création des relations de suivi...');
     const followsCount = users.length * 5;
 
     for (let i = 0; i < followsCount; i++) {
@@ -203,8 +203,8 @@ async function main() {
         const commentPost = await prisma.post.create({
             data: {
                 author: author.id,
-                message: faker.lorem.sentences(faker.datatype.number({ min: 1, max: 3 })),
-                createdAt: faker.date.between(originalPost.createdAt, new Date()),
+                message: faker.lorem.sentences(faker.number.int({ min: 1, max: 3 })),
+                createdAt: new Date(),
             },
         });
 
@@ -216,19 +216,8 @@ async function main() {
         });
     }
 
-    console.log('✅ Seeding terminé!');
-    console.log(`
-📊 Résumé:
-- Utilisateurs: ${users.length}
-- Tags: ${tags.length}
-- Posts: ${posts.length}
-- Associations posts-tags: créées
-- Likes: ~${likesCount}
-- Follows: ~${followsCount}
-- Commentaires: ~${commentsCount}
-  `);
+    console.log('Seeding terminé!');
 }
-
 main()
     .catch((e) => {
         console.error('❌ Erreur lors du seeding:', e);
