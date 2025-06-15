@@ -1,6 +1,6 @@
 import express from 'express';
 const conversationRouter = express.Router();
-
+import { isCuid } from '@paralleldrive/cuid2';
 import {
     addMessageToConversation,
     createConversation, deleteConversation, getAllConversations, getConversationById, modifyConversation

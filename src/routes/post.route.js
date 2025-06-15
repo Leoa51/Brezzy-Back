@@ -6,6 +6,8 @@ import {
   createPost, getAllPosts, getPostById, modifyPost, deletePost, getPostComments, likePost
 } from '../controllers/post.controller.js'
 import { body, param } from 'express-validator';
+
+import { isCuid } from '@paralleldrive/cuid2';
 // import { requiredFields } from '../middlewares/requiredFields.middleware.js'
 
 // postRouter.post('/', requiredFields(['message', 'author']), createPost);
