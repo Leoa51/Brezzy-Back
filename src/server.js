@@ -41,7 +41,7 @@ server.listen(3101, () => {
 io.on('connection', (socket) => {
 
     //map userIdn to socket.id
-    const userId = 'cmbujdzk30000c7bc6yhb5flv';
+    const userId = 'cmby3db1i0000pp6cix0hk7nr';
     usersSocketIds[userId] = socket.id;
     console.log(`User ${userId} connected with socket ID ${socket.id}`);
 
@@ -71,7 +71,7 @@ io.on('connection', (socket) => {
     })
     socket.on('new_message', async (data) => {
         const { conversationId, message, pictureUrl, videoUrl } = data;
-        const author = "cmbujdzk30000c7bc6yhb5flv";
+        const author = "cmby3db1i0000pp6cix0hk7nr";
 
         console.log(usersSocketIds)
         console.log(data)
@@ -104,10 +104,10 @@ io.on('connection', (socket) => {
 
             const userIds = conversation.participants.map(p => p.toString());
             userIds.forEach(userId => {
-                console.log(author)
-                if (usersSocketIds[author]) {
+                console.log(userId)
+                if (usersSocketIds[userId]) {
                     console.log('in')
-                    io.to(usersSocketIds[author]).emit('message', {
+                    io.to(usersSocketIds[userId]).emit('message', {
                         conversationId,
                         message: newMessage
                     });
