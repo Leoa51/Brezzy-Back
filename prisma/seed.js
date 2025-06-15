@@ -7,9 +7,9 @@ const prisma = new PrismaClient();
 faker.locale = 'fr';
 
 async function main() {
-    console.log('🌱 Début du seeding...');
+    console.log(' Début du seeding...');
 
-    console.log('🧹 Nettoyage de la base de données...');
+    console.log('Nettoyage de la base de données...');
     await prisma.linkVid.deleteMany();
     await prisma.linkImg.deleteMany();
     await prisma.asso11.deleteMany();
