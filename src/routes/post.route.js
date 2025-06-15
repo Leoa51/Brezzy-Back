@@ -14,11 +14,11 @@ postRouter.post('/', body('message').isString(), body('originalPostId').custom(v
 
 postRouter.get('/', getAllPosts);
 
-postRouter.get('/:id', param('postid').custom(value => isCuid(value)), getPostById);
+postRouter.get('/:id', param('id').custom(value => isCuid(value)), getPostById);
 
-postRouter.patch('/:id', param('postid').custom(value => isCuid(value)), modifyPost);
+postRouter.patch('/:id', param('id').custom(value => isCuid(value)), modifyPost);
 
-postRouter.delete('/:id', param('postid').custom(value => isCuid(value)), deletePost);
+postRouter.delete('/:id', param('id').custom(value => isCuid(value)), deletePost);
 
 postRouter.get('/comments/:postId', getPostComments);
 

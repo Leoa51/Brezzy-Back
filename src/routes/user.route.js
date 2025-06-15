@@ -7,28 +7,30 @@ import {
     toggleBlockUser, toggleFollowUser, getUserFollowers, getUserFollowing, getUserInfoById, getUserMessages
 } from '../controllers/user.controller.js'
 
+import { body, param } from 'express-validator';
 
-userRouter.post('/', createUser);
+
+userRouter.post('/', body('username').isString(), body('name').isString().notEmpty(), body('firstName').isString().notEmpty(), body('email').isEmail().notEmpty(), body('password').isStrongPassword().notEmpty(), body('bio').isString(), body('language').isString().notEmpty(), createUser);
 
 userRouter.get('/', getAllUsers);
 
-userRouter.get('/by-username/:username', getUserByUsername);
+userRouter.get('/by-username/:username', param('username').isString().notEmpty(), getUserByUsername);
 
-userRouter.patch('/:id/toggle-block', toggleBlockUser);
+userRouter.patch('/:id/toggle-block', param('id').custom(value => isCuid(value)), toggleBlockUser);
 
 userRouter.post('/toggle-follow', toggleFollowUser);
 
-userRouter.get('/:id/followers', getUserFollowers);
+userRouter.get('/:id/followers', param('id').custom(value => isCuid(value)), getUserFollowers);
 
-userRouter.get('/:id/following', getUserFollowing);
+userRouter.get('/:id/following', param('id').custom(value => isCuid(value)), getUserFollowing);
 
-userRouter.get('/:id', getUserById);
+userRouter.get('/:id', param('id').custom(value => isCuid(value)), getUserById);
 
-userRouter.get('/profile-info/:id', getUserInfoById);
+userRouter.get('/profile-info/:id', param('id').custom(value => isCuid(value)), getUserInfoById);
 
-userRouter.patch('/:id', modifyUser);
+userRouter.patch('/:id', param('id').custom(value => isCuid(value)), modifyUser);
 
-userRouter.delete('/:id', deleteUser);
+userRouter.delete('/:id', param('id').custom(value => isCuid(value)), deleteUser);
 
 userRouter.get('/user-messages/:id', getUserMessages);
 
