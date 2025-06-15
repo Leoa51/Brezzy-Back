@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { validationResult } from 'express-validator';
 const prisma = new PrismaClient();
 
 export async function createUser(req, res) {
@@ -872,7 +873,23 @@ export async function unblockUser(req, res) {
     }
 }
 
+export async function getMe(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(422).json({ errors: errors.array() });
+    }
 
+    try {
+        return res.status(200).json(req.user)
+    } catch (err) {
+        console.error("Error retrieving user info:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+
+    }
+}
 
 
 process.on('beforeExit', async () => {
