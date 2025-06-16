@@ -465,7 +465,7 @@ export async function likePost(req, res) {
         }
 
         const userExists = await prisma.user_.findUnique({
-            where: { id: req.user.id }
+            where: { author: req.user.id }
         });
 
         if (!userExists) {
