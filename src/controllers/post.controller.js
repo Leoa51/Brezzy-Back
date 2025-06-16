@@ -8,7 +8,7 @@ export async function createPost(req, res) {
         return res.status(400).json({ errors: errors.array() });
     }
     const { message, originalPostId, parentCommentId } = req.body;
-    author = req.user
+    author = req.user.id
     if (!message || !author) {
         return res.status(400).json({
             error: "Message and author are required"
@@ -93,6 +93,9 @@ export async function getAllPosts(req, res) { //TODO: Create root to get all pos
         return res.status(400).json({ errors: errors.array() });
     }
     try {
+        const { page = 1, limit = 20 } = req.query;
+        const skip = (page - 1) * limit;
+
         const posts = await prisma.post.findMany({
             where: {
                 thisIsComment: null
@@ -115,7 +118,10 @@ export async function getAllPosts(req, res) { //TODO: Create root to get all pos
             },
             orderBy: {
                 createdAt: 'desc'
-            }
+            },
+            skip: parseInt(skip),
+            take: parseInt(limit)
+
         });
 
         res.status(200).json(posts);
@@ -290,7 +296,6 @@ export async function deletePost(req, res) {
     }
     try {
         const postId = req.params.id;
-        const { user } = req.body;
 
         const post = await prisma.post.findUnique({
             where: { id: postId }
@@ -302,7 +307,7 @@ export async function deletePost(req, res) {
             });
         }
 
-        if (post.author !== user.id
+        if (post.author !== req.user.id
         ) {
             return res.status(403).json({
                 error: "You can only delete your own posts"
@@ -332,7 +337,7 @@ export async function modifyPost(req, res) {
     }
     try {
         const postId = req.params.id;
-        const { user, message } = req.body;
+        const { message } = req.body;
 
         if (!message) {
             return res.status(400).json({
@@ -350,7 +355,7 @@ export async function modifyPost(req, res) {
             });
         }
 
-        if (post.author !== user.id) {
+        if (post.author !== req.user.id) {
             return res.status(403).json({
                 error: "You can only edit your own posts"
             });
@@ -389,13 +394,8 @@ export async function likePost(req, res) {
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
-    const { postId, userId } = req.body;
+    const { postId } = req.body;
 
-    if (!postId || !userId) {
-        return res.status(400).json({
-            error: "postId and userId are required"
-        });
-    }
 
     try {
         const postExists = await prisma.post.findUnique({
@@ -409,7 +409,7 @@ export async function likePost(req, res) {
         }
 
         const userExists = await prisma.user_.findUnique({
-            where: { id: userId }
+            where: { id: req.user.id }
         });
 
         if (!userExists) {
@@ -422,7 +422,7 @@ export async function likePost(req, res) {
             where: {
                 idPost_author: {
                     idPost: postId,
-                    author: userId
+                    author: req.user.id
                 }
             }
         });
@@ -432,7 +432,7 @@ export async function likePost(req, res) {
                 where: {
                     idPost_author: {
                         idPost: postId,
-                        author: userId
+                        author: req.user.id
                     }
                 }
             });
@@ -450,7 +450,7 @@ export async function likePost(req, res) {
             await prisma.likePost.create({
                 data: {
                     idPost: postId,
-                    author: userId
+                    author: req.user.id
                 }
             });
 

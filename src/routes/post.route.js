@@ -12,7 +12,7 @@ import { isCuid } from '@paralleldrive/cuid2';
 
 // postRouter.post('/', requiredFields(['message', 'author']), createPost);
 
-postRouter.post('/', body('message').isString(), body('originalPostId').custom(value => isCuid(value)), body('parentCommentId').custom(value => isCuid(value)), createPost); // TODO: Add media handling
+postRouter.post('/', body('message').isString(), createPost); // TODO: Add media handling
 
 postRouter.get('/', getAllPosts);
 
@@ -24,6 +24,6 @@ postRouter.delete('/:id', param('id').custom(value => isCuid(value)), deletePost
 
 postRouter.get('/comments/:postId', getPostComments);
 
-postRouter.post('/like', body('postid').custom(value => isCuid(value)), likePost);
+postRouter.post('/like', body('postid').custom(value => isCuid(value)).notEmpty(), likePost);
 
 export default postRouter;
