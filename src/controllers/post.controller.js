@@ -8,7 +8,7 @@ export async function createPost(req, res) {
         return res.status(400).json({ errors: errors.array() });
     }
     const { message, originalPostId, parentCommentId } = req.body;
-    author = req.user.id
+    const author = req.user.id
     if (!message || !author) {
         return res.status(400).json({
             error: "Message and author are required"
