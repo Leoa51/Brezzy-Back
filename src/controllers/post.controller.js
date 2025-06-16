@@ -86,8 +86,64 @@ export async function createPost(req, res) {
         });
     }
 }
+export async function getAllPostFromFollowers(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
 
-export async function getAllPosts(req, res) { //TODO: Create root to get all post from a user & all post from followed 
+    const { userId } = req.user.id;
+    const { page = 1, limit = 20 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    try {
+        // Récupérer les posts des utilisateurs suivis par userId
+        const posts = await prisma.post.findMany({
+            where: {
+                thisIsComment: null,
+                author: {
+                    in: (
+                        await prisma.follow.findMany({
+                            where: { followerId: userId },
+                            select: { followedId: true }
+                        })
+                    ).map(f => f.followedId)
+                }
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        name: true,
+                        ppPath: true
+                    }
+                },
+                _count: {
+                    select: {
+                        commentsOnThis: true,
+                        likes: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
+            skip,
+            take: parseInt(limit)
+        });
+
+        res.status(200).json(posts);
+    } catch (err) {
+        console.error("Error fetching posts from followers:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+export async function getAllPosts(req, res) { //TODO: Create route to get all post from a user & all post from followed 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });

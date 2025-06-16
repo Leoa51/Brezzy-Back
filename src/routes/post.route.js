@@ -3,7 +3,8 @@ import express from 'express';
 const postRouter = express.Router();
 
 import {
-  createPost, getAllPosts, getPostById, modifyPost, deletePost, getPostComments, likePost
+  createPost, getAllPosts, getPostById, modifyPost, deletePost, getPostComments, likePost,
+  getAllPostFromFollowers
 } from '../controllers/post.controller.js'
 import { body, param } from 'express-validator';
 
@@ -15,7 +16,7 @@ import { isCuid } from '@paralleldrive/cuid2';
 postRouter.post('/', body('message').isString(), createPost); // TODO: Add media handling
 
 postRouter.get('/', getAllPosts);
-
+postRouter.get('/followers', getAllPostFromFollowers)
 postRouter.get('/:id', param('id').custom(value => isCuid(value)), getPostById);
 
 postRouter.patch('/:id', param('id').custom(value => isCuid(value)), modifyPost);
