@@ -25,6 +25,6 @@ postRouter.delete('/:id', param('id').custom(value => isCuid(value)), deletePost
 
 postRouter.get('/comments/:postId', getPostComments);
 
-postRouter.post('/like', body('postid').custom(value => isCuid(value)).notEmpty(), likePost);
+postRouter.post('/like', body('postId').custom(value => isCuid(value)).notEmpty(), likePost);
 
 export default postRouter;
