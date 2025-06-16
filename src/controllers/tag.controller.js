@@ -645,6 +645,39 @@ export async function getTagStats(req, res) {
     }
 }
 
+
+export async function getTaggedPosts(req, res) {
+    try {
+        const { idTag } = req.params;
+
+        if (!idTag) {
+            return res.status(400).json({
+                error: "Query parameter 'idTag' is required"
+            });
+        }
+
+        const taggedPosts = await prisma.post.findMany({
+            where: {
+                tags: {
+                    some: {
+                        idTag: idTag
+                    }
+                }
+            }
+        });
+
+        res.status(200).json({
+            taggedPosts
+        });
+    } catch (err) {
+        console.error("Error fetching tagged posts:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
 process.on('beforeExit', async () => {
     await prisma.$disconnect();
 });

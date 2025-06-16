@@ -529,3 +529,77 @@ export async function likePost(req, res) {
         });
     }
 }
+
+export async function reportPost(req, res) {
+    const { postId, userId } = req.body;
+
+    if (!postId || !userId) {
+        return res.status(400).json({
+            error: "postId and userId are required"
+        });
+    }
+
+    try {
+        const postExists = await prisma.post.findUnique({
+            where: { id: postId }
+        });
+
+        if (!postExists) {
+            return res.status(404).json({
+                error: "Post not found"
+            });
+        }
+
+        const userExists = await prisma.user_.findUnique({
+            where: { id: userId }
+        });
+
+        if (!userExists) {
+            return res.status(404).json({
+                error: "User not found"
+            });
+        }
+
+        const existingReport = await prisma.reportPost.findUnique({
+            where: {
+                idPost_author: {
+                    idPost: postId,
+                    author: userId
+                }
+            }
+        });
+
+        // if (existingReport) {
+        //     await prisma.reportPost.delete({
+        //         where: {
+        //             idPost_author: {
+        //                 idPost: postId,
+        //                 author: userId
+        //             }
+        //         }
+        //     });
+        //
+        //     res.status(200).json({
+        //         message: "Post reported successfully"
+        //     });
+        // } else {
+        if (!existingReport) {
+            await prisma.reportPost.create({
+                data: {
+                    idPost: postId,
+                    author: userId
+                }
+            });
+
+            res.status(200).json({
+                message: "Post reported successfully"
+            });
+        }
+    } catch (err) {
+        console.error("Error reporting post:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}

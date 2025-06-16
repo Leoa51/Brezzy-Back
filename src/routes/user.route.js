@@ -34,4 +34,8 @@ userRouter.delete('/:id', param('id').custom(value => isCuid(value)), deleteUser
 
 userRouter.get('/user-messages/:id', getUserMessages);
 
+userRouter.post('/block', blockUser);
+
+userRouter.post('/unblock', unblockUser);
+
 export default userRouter;
