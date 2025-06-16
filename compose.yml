@@ -27,6 +27,17 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-app}
     networks:
       - db
+  postegredb2:
+    image: postgres:${POSTGRES_VERSION:-latest}
+    restart: always
+    ports:
+      - 5433:5432
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: app
+    networks:
+      - db
 
   adminer:
     image: michalhosna/adminer
@@ -65,25 +76,6 @@ services:
       ME_CONFIG_BASICAUTH: false
     networks:
       - db
-
-  api-1:
-    build:
-      context: .
-      dockerfile: docker/DockerFile.api
-    restart: always
-    container_name: api-1
-    ports:
-      - "3000:3000"
-    depends_on:
-      - mongodb
-      - postegredb
-    environment:
-      POSTGRES_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-!ChangeMe!}@database:${POSTGRES_PORT}/${POSTGRES_DB:-app}?serverVersion=${POSTGRES_VERSION:-17}&charset=${POSTGRES_CHARSET:-utf8}
-    networks:
-      - app
-      - db
-    env_file:
-      - .env
 
 networks:
   app:

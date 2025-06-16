@@ -143,15 +143,17 @@ export async function getAllPostFromFollowers(req, res) {
     }
 }
 
-export async function getAllPosts(req, res) { //TODO: Create route to get all post from a user & all post from followed 
+export async function getAllPosts(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
+
     try {
         const { page = 1, limit = 20 } = req.query;
         const skip = (page - 1) * limit;
 
+        // Récupération des posts avec pagination
         const posts = await prisma.post.findMany({
             where: {
                 thisIsComment: null
@@ -177,10 +179,32 @@ export async function getAllPosts(req, res) { //TODO: Create route to get all po
             },
             skip: parseInt(skip),
             take: parseInt(limit)
-
         });
 
-        res.status(200).json(posts);
+        // Compter le nombre total de posts (pour la pagination)
+        const totalPosts = await prisma.post.count({
+            where: {
+                thisIsComment: null
+            }
+        });
+
+        // Calculer le nombre total de pages
+        const totalPages = Math.ceil(totalPosts / parseInt(limit));
+        const currentPage = parseInt(page);
+
+        // Retourner les données avec les infos de pagination
+        res.status(200).json({
+            posts,
+            pagination: {
+                currentPage,
+                totalPages,
+                totalPosts,
+                limit: parseInt(limit),
+                hasMore: currentPage < totalPages,
+                hasPrevious: currentPage > 1
+            }
+        });
+
     } catch (err) {
         console.error("Error fetching posts:", err);
         res.status(500).json({
