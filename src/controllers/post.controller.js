@@ -181,18 +181,16 @@ export async function getAllPosts(req, res) {
             take: parseInt(limit)
         });
 
-        // Compter le nombre total de posts (pour la pagination)
         const totalPosts = await prisma.post.count({
             where: {
                 thisIsComment: null
             }
         });
 
-        // Calculer le nombre total de pages
         const totalPages = Math.ceil(totalPosts / parseInt(limit));
         const currentPage = parseInt(page);
 
-        // Retourner les données avec les infos de pagination
+
         res.status(200).json({
             posts,
             pagination: {

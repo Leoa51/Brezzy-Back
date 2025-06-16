@@ -3,81 +3,91 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { Server } from 'socket.io';
-import { webSocketAuth } from './middleware/WebSocketAuth.js';
-
+import jwt from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
 import Conversation from './models/conversation.model.js';
+
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+const prisma = new PrismaClient();
+
 mongoose
-    // .connect("mongodb://" + process.env.MONGO_HOST + ":" + process.env.MONGO_PORT + "/" + process.env.MONGO_DATABASE_NAME)
     .connect(`mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_NAME}?authSource=admin`)
     .then(() => {
-        // Affiche un message de succès lorsque la connexion est établie.
-        console.log("MongoDB connected !");
-
-        // Démarre l'application sur le port spécifié.
+        console.log("MongoDB connected!");
     })
     .catch((err) => {
-        // Affiche une erreur si la connexion échoue.
-        console.log(err);
+        console.log("MongoDB connection error:", err);
     });
 
 const usersSocketIds = {};
+
 const io = new Server(server, {
     cors: {
-        origin: '*', // adapte selon tes besoins
+        origin: '*',
         methods: ['GET', 'POST'],
     },
 });
 
-server.listen(3101, () => {
-    console.log(`Server is running on port 3101 `);
+io.use(async (socket, next) => {
+    try {
+        const token = socket.handshake.headers['authorization'];
+
+        if (!token) throw new Error('Token missing');
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        const user = await prisma.user_.findUnique({
+            where: { id: decoded._id }
+        });
+
+        if (!user) throw new Error('User not found');
+
+        socket.user = user;
+        next();
+    } catch (error) {
+        console.error('Authentication error:', error.message);
+        next(new Error('Authentication error'));
+    }
 });
 
-
-
 io.on('connection', (socket) => {
-
-    //map userIdn to socket.id
-    const userId = 'cmby3db1i0000pp6cix0hk7nr';
+    const userId = socket.user.id;
     usersSocketIds[userId] = socket.id;
     console.log(`User ${userId} connected with socket ID ${socket.id}`);
-
-
+    console.log(usersSocketIds)
     socket.on('disconnect', () => {
-        //remove userId from usersSocketIds
-        const userId = 1;
         delete usersSocketIds[userId];
-
-        console.log('User disconnected');
+        console.log(`User ${userId} disconnected`);
     });
 
     socket.on('conversation', async (data) => {
-        const participants = data.participants
-        const newConversation = await Conversation.create({
-            participants,
-            messages: [],
-        });
+        const participants = data.participants;
 
-        const userIds = participants.map(p => p.toString());
+        try {
+            const newConversation = await Conversation.create({
+                participants,
+                messages: [],
+            });
 
-        userIds.forEach(userId => {
-            if (usersSocketIds[userId]) {
-                io.to(usersSocketIds[userId]).emit('new_conversation', newConversation);
-            }
-        });
-    })
+            participants.forEach(participantId => {
+                const pid = participantId.toString();
+                if (usersSocketIds[pid]) {
+                    io.to(usersSocketIds[pid]).emit('new_conversation', newConversation);
+                }
+            });
+        } catch (err) {
+            console.error('Error creating conversation:', err.message);
+        }
+    });
+
     socket.on('new_message', async (data) => {
         const { conversationId, message, pictureUrl, videoUrl } = data;
-        const author = "cmby3db1i0000pp6cix0hk7nr";
+        const author = socket.user.id;
 
-        console.log(usersSocketIds)
-        console.log(data)
-
-
-        if (!conversationId) {
+        if (!conversationId || !message) {
             console.error('Missing data to send message');
             return;
         }
@@ -89,6 +99,7 @@ io.on('connection', (socket) => {
                 console.error(`Conversation with ID ${conversationId} not found`);
                 return;
             }
+
             const newMessage = {
                 author,
                 content: message,
@@ -99,24 +110,25 @@ io.on('connection', (socket) => {
             };
 
             conversation.messages.push(newMessage);
-
             await conversation.save();
 
-            const userIds = conversation.participants.map(p => p.toString());
-            userIds.forEach(userId => {
-                console.log(userId)
-                if (usersSocketIds[userId]) {
-                    console.log('in')
-                    io.to(usersSocketIds[userId]).emit('message', {
+            const userIds = conversation.participants
+            console.log(userIds)
+
+            userIds.forEach(uid => {
+                if (usersSocketIds[uid]) {
+                    io.to(usersSocketIds[uid]).emit('message', {
                         conversationId,
                         message: newMessage
                     });
                 }
             });
         } catch (err) {
-            console.error(`Error handling message: ${err.message}`);
+            console.error('Error handling message:', err.message);
         }
     });
 });
 
-
+server.listen(3101, () => {
+    console.log(`Server is running on port 3101`);
+});

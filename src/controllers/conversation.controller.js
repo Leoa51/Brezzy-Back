@@ -2,6 +2,7 @@ import Conversation from '../models/conversation.model.js';
 import { validationResult } from 'express-validator';
 
 export async function createConversation(req, res) {
+  console.log(req.body)
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -22,10 +23,15 @@ export async function createConversation(req, res) {
 
 export async function getAllConversations(req, res) {
   try {
-    const conversations = await Conversation.find();
+
+    const conversations = await Conversation.find({
+      participants: req.user.id
+    });
+
     res.status(200).json(conversations);
   } catch (err) {
-    res.status(500).json(err);
+    console.error('Error fetching conversations:', err);
+    res.status(500).json({ error: 'Failed to fetch conversations' });
   }
 }
 
