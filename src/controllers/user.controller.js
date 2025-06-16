@@ -34,6 +34,8 @@ export async function createUser(req, res) {
         // Hash password
         // const saltRounds = 10;
         // const hashedPassword = await bcrypt.hash(password, saltRounds);
+        // const saltRounds = 10;
+        // const hashedPassword = await bcrypt.hash(password, saltRounds);
 
         const newUser = await prisma.user_.create({
             data: {
@@ -41,6 +43,7 @@ export async function createUser(req, res) {
                 name,
                 firstName,
                 email,
+                passwordHash: password,
                 passwordHash: password,
                 bio: bio || null,
                 ppPath: ppPath || null,
@@ -156,6 +159,7 @@ export async function getUserById(req, res) {
                 username: true,
                 name: true,
                 firstName: true,
+                firstName: true,
                 email: true,
                 bio: true,
                 ppPath: true,
@@ -177,6 +181,12 @@ export async function getUserById(req, res) {
                                 linkImages: true,
                                 linkVideos: true,
                                 publications: true
+                                commentsOnThis: true,
+                                tags: true,
+                                reports: true,
+                                linkImages: true,
+                                linkVideos: true,
+                                publications: true
                             }
                         }
                     },
@@ -184,12 +194,14 @@ export async function getUserById(req, res) {
                         createdAt: 'desc'
                     },
                     take: 10
+                    take: 10
                 },
                 _count: {
                     select: {
                         posts: true,
                         followers: true,
                         following: true,
+                        likes: true
                         likes: true
                     }
                 }
@@ -211,6 +223,8 @@ export async function getUserById(req, res) {
         });
     }
 }
+
+
 
 
 
@@ -498,9 +512,10 @@ export async function toggleFollowUser(req, res) {
     }
 
     try {
-        const { followerId, followedId } = req.body;
+        const followerId = req.user.id
+        const { followedId } = req.body;
 
-        if (!followerId || !followedId) {
+        if (!followedId) {
             return res.status(400).json({
                 error: "FollowerId and followedId are required"
             });
