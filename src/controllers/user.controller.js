@@ -872,7 +872,6 @@ export async function unblockUser(req, res) {
         });
     }
 }
-
 export async function getMe(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -880,14 +879,35 @@ export async function getMe(req, res) {
     }
 
     try {
-        return res.status(200).json(req.user)
+        const user = await prisma.user_.findUnique({
+            where: { id: req.user.id },
+            select: {
+                id: true,
+                name: true,
+                firstName: true,
+                email: true,
+                username: true,
+                ppPath: true,
+                language: true,
+                bio: true,
+                validated: true,
+                isBlocked: true,
+                createdAt: true,
+                updatedAt: true
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        return res.status(200).json(user);
     } catch (err) {
         console.error("Error retrieving user info:", err);
-        res.status(500).json({
+        return res.status(500).json({
             error: "Internal server error",
             details: err.message
         });
-
     }
 }
 
