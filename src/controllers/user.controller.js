@@ -512,9 +512,10 @@ export async function toggleFollowUser(req, res) {
     }
 
     try {
-        const { followerId, followedId } = req.body;
+        const followerId = req.user.id
+        const { followedId } = req.body;
 
-        if (!followerId || !followedId) {
+        if (!followedId) {
             return res.status(400).json({
                 error: "FollowerId and followedId are required"
             });
