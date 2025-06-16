@@ -1,16 +1,13 @@
-# Use the official Node.js image as the base image node 20 to use react router v7
-FROM node:24-alpine3.21
 
-# Set the working directory
+FROM node:20-alpine
+
 WORKDIR /usr/src/app
 
-COPY /package*.json ./
-# Install dependencies
+COPY package*.json ./
+
 RUN npm install --legacy-peer-deps
 
-RUN npx prisma migrate dev --name init
 COPY . .
 
+RUN npx prisma generate
 EXPOSE 3000
-
-CMD ["npm", "start"]

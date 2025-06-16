@@ -1,4 +1,7 @@
+version: "3.8"
+
 services:
+  # Base de données MongoDB
   mongodb:
     image: mongo:${MONGO_VERSION:-latest}
     restart: always
@@ -13,12 +16,13 @@ services:
     networks:
       - db
 
+  # Base de données PostgreSQL
   postegredb:
     image: postgres:${POSTGRES_VERSION:-latest}
     restart: always
     container_name: postegredb
     ports:
-      - 5432:5432
+      - "5432:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -28,12 +32,13 @@ services:
     networks:
       - db
 
+  # Interface d'administration pour PostgreSQL
   adminer:
     image: michalhosna/adminer
     restart: always
     container_name: adminer
     ports:
-      - 8081:8080
+      - "8081:8080"
     depends_on:
       - postegredb
       - mongodb
@@ -44,12 +49,13 @@ services:
       ADMINER_DESIGN: nette
       ADMINER_DB: ${POSTGRES_DB:-app}
       ADMINER_DRIVER: pgsql
-      ADMINER_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
+      ADMINER_PASSWORD: ${POSTGRES_PASSWORD:-example}
       ADMINER_SERVER: postegredb
-      ADMINER_USERNAME: ${POSTGRES_USER:-app}
+      ADMINER_USERNAME: ${POSTGRES_USER:-postgres}
       ADMINER_AUTOLOGIN: 1
       ADMINER_NAME: BreezySupport
 
+  # Interface d'administration pour MongoDB
   mongo-express:
     image: mongo-express:latest
     restart: always
@@ -65,31 +71,165 @@ services:
       ME_CONFIG_BASICAUTH: false
     networks:
       - db
+    command: npm run start
 
-  api-1:
+  # Microservice API Posts
+  api-posts:
     build:
       context: .
       dockerfile: docker/DockerFile.api
     restart: always
-    container_name: api-1
+    container_name: api-posts
     ports:
-      - "3000:3000"
+      - "3001:3001"
     depends_on:
       - mongodb
       - postegredb
     environment:
-      POSTGRES_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-!ChangeMe!}@database:${POSTGRES_PORT}/${POSTGRES_DB:-app}?serverVersion=${POSTGRES_VERSION:-17}&charset=${POSTGRES_CHARSET:-utf8}
+      - SERVICE=posts
+      - API_PORT=3001
+    networks:
+      - app
+      - db
+    env_file:
+      - .env
+    command:
+      - npm run start
+  # Microservice API Users
+  api-users:
+    build:
+      context: .
+      dockerfile: docker/DockerFile.api
+    restart: always
+    container_name: api-users
+    ports:
+      - "3002:3002"
+    depends_on:
+      - mongodb
+      - postegredb
+    environment:
+      - SERVICE=users
+      - API_PORT=3002
+    networks:
+      - app
+      - db
+    env_file:
+      - .env
+    command: npm run start
+  # Microservice API WebSocket/Chat
+  api-websocket:
+    build:
+      context: .
+      dockerfile: docker/DockerFile.api
+    restart: always
+    container_name: api-websocket
+    ports:
+      - "3003:3003"
+    depends_on:
+      - mongodb
+      - postegredb
+    environment:
+      - SERVICE=chat
+      - API_PORT=3003
+    command: npm run websocket
     networks:
       - app
       - db
     env_file:
       - .env
 
+  # Microservice API Auth
+  api-auth:
+    build:
+      context: .
+      dockerfile: docker/DockerFile.api
+    restart: always
+    container_name: api-auth
+    ports:
+      - "3004:3004"
+    depends_on:
+      - mongodb
+      - postegredb
+    environment:
+      - SERVICE=auth
+      - API_PORT=3004
+    networks:
+      - app
+      - db
+    env_file:
+      - .env
+    command: npm run start
+  # Microservice API Admin
+  api-admin:
+    build:
+      context: .
+      dockerfile: docker/DockerFile.api
+    restart: always
+    container_name: api-admin
+    ports:
+      - "3005:3005"
+    depends_on:
+      - mongodb
+      - postegredb
+    environment:
+      - SERVICE=admin
+      - API_PORT=3005
+    networks:
+      - app
+      - db
+    env_file:
+      - .env
+    command: npm run start
+  # Microservice API Tags
+  api-tags:
+    build:
+      context: .
+      dockerfile: docker/DockerFile.api
+    restart: always
+    container_name: api-tags
+    ports:
+      - "3006:3006"
+    depends_on:
+      - mongodb
+      - postegredb
+    environment:
+      - SERVICE=tags
+      - API_PORT=3006
+    networks:
+      - app
+      - db
+    env_file:
+      - .env
+    command: npm run start
+  # Reverse Proxy Caddy
+  caddy:
+    image: caddy:latest
+    restart: always
+    container_name: caddy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "2019:2019"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api-posts
+      - api-users
+      - api-websocket
+      - api-auth
+      - api-admin
+      - api-tags
+    networks:
+      - app
+
 networks:
   app:
   db:
 
 volumes:
-  mongodb:
-  postegredb:
-  matomo:
+  mongodb_data:
+  postgres_data:
+  caddy_data:
+  caddy_config:
