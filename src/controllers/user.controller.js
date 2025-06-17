@@ -515,8 +515,8 @@ export async function getIsFollowing(req, res) {
         const followRelation = await prisma.follow.findUnique({
             where: {
                 followerId_followedId: {
-                    followerId: currentUserId,   // Celui qui suit
-                    followedId: targetUserId     // Celui qui est suivi
+                    followerId: currentUserId,
+                    followedId: targetUserId
                 }
             }
         });
@@ -611,7 +611,7 @@ export async function getUserFollowers(req, res) {
     }
 
     try {
-        const userId = req.params.id;
+        const userId = req.user.id;
         const { page = 1, limit = 20 } = req.query;
         const skip = (page - 1) * limit;
 
@@ -664,7 +664,7 @@ export async function getUserFollowing(req, res) {
     }
 
     try {
-        const userId = req.params.id;
+        const userId = req.user.id;
         const { page = 1, limit = 20 } = req.query;
         const skip = (page - 1) * limit;
 

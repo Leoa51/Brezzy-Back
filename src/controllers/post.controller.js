@@ -552,6 +552,119 @@ export async function likePost(req, res) {
     }
 }
 
+export async function getIsLiked(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const { postId } = req.params;
+        const userId = req.user.id;
+
+        const postExists = await prisma.post.findUnique({
+            where: { id: postId }
+        });
+
+        if (!postExists) {
+            return res.status(404).json({
+                error: "Post not found"
+            });
+        }
+
+        const like = await prisma.likePost.findUnique({
+            where: {
+                idPost_author: {
+                    idPost: postId,
+                    author: userId
+                }
+            }
+        });
+
+        const likeCount = await prisma.likePost.count({
+            where: { idPost: postId }
+        });
+
+        res.status(200).json({
+            isLiked: !!like,
+            likeCount: likeCount,
+            postId: postId
+        });
+
+    } catch (err) {
+        console.error("Error checking like status:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+export async function getLikedPostsByUser(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const { userId } = req.params;
+        const { page = 1, limit = 20 } = req.query;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const likedPosts = await prisma.likePost.findMany({
+            where: {
+                author: userId
+            },
+            include: {
+                post: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                username: true,
+                                name: true,
+                                ppPath: true
+                            }
+                        },
+                        _count: {
+                            select: {
+                                commentsOnThis: true,
+                                likes: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
+            skip,
+            take: parseInt(limit)
+        });
+
+        const posts = likedPosts.map(like => ({
+            ...like.post,
+            likedAt: like.createdAt
+        }));
+
+        res.status(200).json({
+            posts,
+            pagination: {
+                currentPage: parseInt(page),
+                totalPages: Math.ceil(likedPosts.length / parseInt(limit)),
+                totalLikes: likedPosts.length
+            }
+        });
+
+    } catch (err) {
+        console.error("Error fetching liked posts:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
 export async function reportPost(req, res) {
     const { postId, userId } = req.body;
 

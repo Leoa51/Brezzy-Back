@@ -23,9 +23,9 @@ userRouter.post('/toggle-follow', toggleFollowUser);
 
 userRouter.get('/isFollowing/:id',getIsFollowing)
 
-userRouter.get('/:id/followers', param('id').custom(value => isCuid(value)), getUserFollowers);
+userRouter.get('/followers', getUserFollowers);
 
-userRouter.get('/:id/following', param('id').custom(value => isCuid(value)), getUserFollowing);
+userRouter.get('/following', getUserFollowing);
 
 userRouter.get('/:id', param('id').custom(value => isCuid(value)), getUserById);
 
