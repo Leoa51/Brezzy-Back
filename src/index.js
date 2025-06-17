@@ -28,16 +28,16 @@ app.use(cors({
 
 
 switch (process.env.SERVICE) {
-  case tags:
+  case 'tags':
     app.use('/api/tags', authMiddleware, tagsRouter);
     break;
-  case users:
+  case 'users':
     app.use('/api/users', authMiddleware, usersRouter);
-  case posts:
+  case 'posts':
     app.use('/api/posts', authMiddleware, postsRouter);
-  case chat:
+  case 'chat':
     app.use('/api/conversations', authMiddleware, conversationRouter);
-  case auth:
+  case 'auth':
     app.use('/api/auth', authRouter)
   default:
     break;

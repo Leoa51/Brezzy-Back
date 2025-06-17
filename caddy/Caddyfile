@@ -1,93 +1,83 @@
 {
     admin 0.0.0.0:2019
-    auto_https on
+    auto_https off
 }
 
-# API Gateway principal avec HTTPS
 breezy-api.panini.simon51100.fr {
-    # Routes API
-    handle_path /api/auth/* {
-        reverse_proxy api-auth:3004
+    handle /api/auth/* {
+        reverse_proxy api-auth:3000
     }
     
-    handle_path /api/posts/* {
-        reverse_proxy api-posts:3001
+    handle /api/posts/* {
+        reverse_proxy api-posts:3000
     }
     
-    handle_path /api/users/* {
-        reverse_proxy api-users:3002
+    handle /api/users/* {
+        reverse_proxy api-users:3000
     }
     
-    handle_path /api/conversations/* {
-        reverse_proxy api-websocket:3003
+    handle /api/conversations/* {
+        reverse_proxy api-websocket:3000
     }
     
-    handle_path /api/admin/* {
-        reverse_proxy api-admin:3005
+    handle /api/admin/* {
+        reverse_proxy api-admin:3000
     }
     
-    handle_path /api/tags/* {
-        reverse_proxy api-tags:3006
+    handle /api/tags/* {
+        reverse_proxy api-tags:3000
     }
     
-    # Headers CORS
     header {
         Access-Control-Allow-Origin "*"
         Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS"
         Access-Control-Allow-Headers "Content-Type, Authorization"
     }
     
-    # Gestion des requêtes OPTIONS pour CORS
     @options method OPTIONS
     respond @options 200
     
-    # Health check
     handle /health {
         respond "API Gateway is running" 200
     }
     
-    # Logs d'accès
     log {
         output file /var/log/caddy/access.log
         format json
     }
 }
 
-# Redirection HTTP vers HTTPS pour localhost (développement)
 localhost:80 {
-    # Routes API pour développement local
-    handle_path /api/auth/* {
-        reverse_proxy api-auth:3004
+    handle /api/auth/* {
+        reverse_proxy api-auth:3000
     }
     
-    handle_path /api/posts/* {
-        reverse_proxy api-posts:3001
+    handle /api/posts/* {
+        reverse_proxy api-posts:3000
     }
     
-    handle_path /api/users/* {
-        reverse_proxy api-users:3002
+    handle /api/users/* {
+        reverse_proxy api-users:3000
     }
     
-    handle_path /api/conversations/* {
-        reverse_proxy api-websocket:3003
+    handle /api/conversations/* {
+        reverse_proxy api-websocket:3000
     }
     
-    handle_path /api/admin/* {
-        reverse_proxy api-admin:3005
+    handle /api/admin/* {
+        reverse_proxy api-admin:3000
     }
     
-    handle_path /api/tags/* {
-        reverse_proxy api-tags:3006
+    handle /api/tags/* {
+        reverse_proxy api-tags:3000
     }
     
-    # Headers CORS
     header {
         Access-Control-Allow-Origin "*"
         Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS"
         Access-Control-Allow-Headers "Content-Type, Authorization"
     }
     
-    # Gestion des requêtes OPTIONS pour CORS
     @options method OPTIONS
     respond @options 200
     

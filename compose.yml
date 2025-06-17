@@ -73,134 +73,121 @@ services:
       - db
     command: npm run start
 
-  # Microservice API Posts
+  # Microservices
   api-posts:
-    build:
-      context: .
-      dockerfile: docker/DockerFile.api
+    image: api:latest
     restart: always
     container_name: api-posts
     ports:
-      - "3001:3001"
+      - "3001:3000"
     depends_on:
       - mongodb
       - postegredb
     environment:
       - SERVICE=posts
-      - API_PORT=3001
+      - API_PORT=3000
     networks:
       - app
       - db
     env_file:
       - .env
-    command:
-      - npm run start
-  # Microservice API Users
+    command: npm run start
+
   api-users:
-    build:
-      context: .
-      dockerfile: docker/DockerFile.api
+    image: api:latest
     restart: always
     container_name: api-users
     ports:
-      - "3002:3002"
+      - "3007:3000"
     depends_on:
       - mongodb
       - postegredb
     environment:
       - SERVICE=users
-      - API_PORT=3002
+      - API_PORT=3000
     networks:
       - app
       - db
     env_file:
       - .env
     command: npm run start
-  # Microservice API WebSocket/Chat
+
   api-websocket:
-    build:
-      context: .
-      dockerfile: docker/DockerFile.api
+    image: api:latest
     restart: always
     container_name: api-websocket
     ports:
-      - "3003:3003"
+      - "3003:3000"
     depends_on:
       - mongodb
       - postegredb
     environment:
       - SERVICE=chat
-      - API_PORT=3003
-    command: npm run websocket
+      - API_PORT=3000
     networks:
       - app
       - db
     env_file:
       - .env
+    command: npm run websocket
 
-  # Microservice API Auth
   api-auth:
-    build:
-      context: .
-      dockerfile: docker/DockerFile.api
+    image: api:latest
     restart: always
     container_name: api-auth
     ports:
-      - "3004:3004"
+      - "3004:3000"
     depends_on:
       - mongodb
       - postegredb
     environment:
       - SERVICE=auth
-      - API_PORT=3004
+      - API_PORT=3000
     networks:
       - app
       - db
     env_file:
       - .env
     command: npm run start
-  # Microservice API Admin
+
   api-admin:
-    build:
-      context: .
-      dockerfile: docker/DockerFile.api
+    image: api:latest
     restart: always
     container_name: api-admin
     ports:
-      - "3005:3005"
+      - "3005:3000"
     depends_on:
       - mongodb
       - postegredb
     environment:
       - SERVICE=admin
-      - API_PORT=3005
+      - API_PORT=3000
     networks:
       - app
       - db
     env_file:
       - .env
     command: npm run start
-  # Microservice API Tags
+
   api-tags:
-    build:
-      context: .
-      dockerfile: docker/DockerFile.api
+    image: api:latest
     restart: always
     container_name: api-tags
     ports:
-      - "3006:3006"
+      - "3006:3000"
     depends_on:
       - mongodb
       - postegredb
     environment:
       - SERVICE=tags
-      - API_PORT=3006
+      - API_PORT=3000
     networks:
       - app
       - db
     env_file:
       - .env
     command: npm run start
+
   # Reverse Proxy Caddy
   caddy:
     image: caddy:latest
