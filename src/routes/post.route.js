@@ -16,7 +16,9 @@ import { isCuid } from '@paralleldrive/cuid2';
 postRouter.post('/', body('message').isString(), createPost); // TODO: Add media handling
 
 postRouter.get('/', getAllPosts);
+
 postRouter.get('/followers', getAllPostFromFollowers)
+
 postRouter.get('/:id', param('id').custom(value => isCuid(value)), getPostById);
 
 postRouter.patch('/:id', param('id').custom(value => isCuid(value)), modifyPost);
@@ -28,3 +30,4 @@ postRouter.get('/comments/:postId', getPostComments);
 postRouter.post('/like', body('postId').custom(value => isCuid(value)).notEmpty(), likePost);
 
 export default postRouter;
+

@@ -44,7 +44,6 @@ export async function createUser(req, res) {
                 firstName,
                 email,
                 passwordHash: password,
-                passwordHash: password,
                 bio: bio || null,
                 ppPath: ppPath || null,
                 language: language || null,
@@ -159,7 +158,6 @@ export async function getUserById(req, res) {
                 username: true,
                 name: true,
                 firstName: true,
-                firstName: true,
                 email: true,
                 bio: true,
                 ppPath: true,
@@ -180,13 +178,7 @@ export async function getUserById(req, res) {
                                 reports: true,
                                 linkImages: true,
                                 linkVideos: true,
-                                publications: true
-                                commentsOnThis: true,
-                                tags: true,
-                                reports: true,
-                                linkImages: true,
-                                linkVideos: true,
-                                publications: true
+                                publications: true,
                             }
                         }
                     },
@@ -194,14 +186,12 @@ export async function getUserById(req, res) {
                         createdAt: 'desc'
                     },
                     take: 10
-                    take: 10
                 },
                 _count: {
                     select: {
                         posts: true,
                         followers: true,
                         following: true,
-                        likes: true
                         likes: true
                     }
                 }
@@ -504,7 +494,49 @@ export async function toggleBlockUser(req, res) {
         });
     }
 }
+export async function getIsFollowing(req, res) {
+    try {
+        const targetUserId = req.params.id;
+        const currentUserId = req.user.id;
 
+        if (!targetUserId) {
+            return res.status(400).json({
+                success: false,
+                error: "ID utilisateur manquant"
+            });
+        }
+
+        if (targetUserId === currentUserId) {
+            return res.status(400).json({
+                success: false,
+                error: "Impossible de vérifier si vous vous suivez vous-même"
+            });
+        }
+        const followRelation = await prisma.follow.findUnique({
+            where: {
+                followerId_followedId: {
+                    followerId: currentUserId,   // Celui qui suit
+                    followedId: targetUserId     // Celui qui est suivi
+                }
+            }
+        });
+
+        const isFollowing = followRelation !== null;
+
+
+        return res.status(200).json({
+            success: true,
+            following: isFollowing,
+        });
+
+    } catch (error) {
+        console.error(" Erreur vérification isFollowing:", error);
+        return res.status(500).json({
+            success: false,
+            error: "Erreur serveur lors de la vérification du statut de follow"
+        });
+    }
+}
 export async function toggleFollowUser(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

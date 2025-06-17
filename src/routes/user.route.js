@@ -4,7 +4,7 @@ const userRouter = express.Router();
 import { isCuid } from '@paralleldrive/cuid2';
 import {
     createUser, getAllUsers, getUserById, getUserByUsername, modifyUser, deleteUser,
-    toggleBlockUser, toggleFollowUser, getUserFollowers, getUserFollowing, getUserInfoById, getUserMessages, getMe
+    toggleBlockUser, toggleFollowUser, getUserFollowers, getUserFollowing, getUserInfoById, getUserMessages, getMe, blockUser, unblockUser , getIsFollowing
 } from '../controllers/user.controller.js'
 
 import { body, param } from 'express-validator';
@@ -20,6 +20,8 @@ userRouter.get('/by-username/:username', param('username').isString().notEmpty()
 userRouter.patch('/:id/toggle-block', param('id').custom(value => isCuid(value)), toggleBlockUser);
 
 userRouter.post('/toggle-follow', toggleFollowUser);
+
+userRouter.get('/isFollowing/:id',getIsFollowing)
 
 userRouter.get('/:id/followers', param('id').custom(value => isCuid(value)), getUserFollowers);
 
