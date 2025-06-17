@@ -210,6 +210,9 @@ services:
       - api-tags
     networks:
       - app
+    labels:
+      caddy: breezy-api.panini.simon511000.fr
+      caddy.reverse_proxy: "{{upstreams 80}}"
 
 networks:
   app:

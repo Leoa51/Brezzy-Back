@@ -3,6 +3,7 @@
     auto_https off
 }
 
+
 localhost:80 {
     handle /api/auth/* {
         reverse_proxy api-auth:3000
