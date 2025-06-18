@@ -8,6 +8,7 @@ import {
 } from '../controllers/user.controller.js'
 
 import { body, param } from 'express-validator';
+
 userRouter.get('/reportedUser', getReportedUser)
 userRouter.get('/me', getMe)
 

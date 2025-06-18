@@ -10,9 +10,11 @@ export async function getReportedUser(req, res) {
             where: {
                 userReports: {
                     some: {}
-                }
+                },
+                isBlocked: false
             },
             select: {
+                id: true,
                 firstName: true,
                 name: true,
                 email: true,
