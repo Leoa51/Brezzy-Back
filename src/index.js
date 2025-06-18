@@ -26,12 +26,24 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
 }));
 
-app.use('/api/tags', authMiddleware, tagsRouter);
-app.use('/api/posts', authMiddleware, postsRouter);
-app.use('/api/users', authMiddleware, usersRouter);
-app.use('/api/conversations', authMiddleware, conversationRouter);
 
-app.use('/api/auth', authRouter)
+switch (process.env.SERVICE) {
+  case 'tags':
+    app.use('/api/tags', authMiddleware, tagsRouter);
+    break;
+  case 'users':
+    app.use('/api/users', authMiddleware, usersRouter);
+  case 'posts':
+    app.use('/api/posts', authMiddleware, postsRouter);
+  case 'chat':
+    app.use('/api/conversations', authMiddleware, conversationRouter);
+  case 'auth':
+    app.use('/api/auth', authRouter)
+  default:
+    break;
+}
+
+
 
 mongoose
   .connect(`mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_NAME}?authSource=admin`)

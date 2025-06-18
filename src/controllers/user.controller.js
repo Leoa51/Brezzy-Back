@@ -158,6 +158,7 @@ export async function getUserById(req, res) {
                 username: true,
                 name: true,
                 firstName: true,
+
                 email: true,
                 bio: true,
                 ppPath: true,
@@ -544,10 +545,10 @@ export async function toggleFollowUser(req, res) {
     }
 
     try {
-        const followerId = req.user.id
-        const { followedId } = req.body;
 
-        if (!followedId) {
+        const { followerId, followedId } = req.body;
+
+        if (!followerId || !followedId) {
             return res.status(400).json({
                 error: "FollowerId and followedId are required"
             });
@@ -611,7 +612,7 @@ export async function getUserFollowers(req, res) {
     }
 
     try {
-        const userId = req.user.id;
+        const userId = req.params.id;
         const { page = 1, limit = 20 } = req.query;
         const skip = (page - 1) * limit;
 
@@ -664,7 +665,7 @@ export async function getUserFollowing(req, res) {
     }
 
     try {
-        const userId = req.user.id;
+        const userId = req.params.id;
         const { page = 1, limit = 20 } = req.query;
         const skip = (page - 1) * limit;
 
