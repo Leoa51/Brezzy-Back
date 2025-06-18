@@ -4,7 +4,7 @@ const userRouter = express.Router();
 import { isCuid } from '@paralleldrive/cuid2';
 import {
     createUser, getAllUsers, getUserById, getUserByUsername, modifyUser, deleteUser,
-    toggleBlockUser, toggleFollowUser, getUserFollowers, getUserFollowing, getUserInfoById, getUserMessages, getMe, blockUser, unblockUser
+    toggleBlockUser, toggleFollowUser, getUserFollowers, getUserFollowing, getUserInfoById, getUserMessages, getMe, blockUser, unblockUser, getReportedUser
 } from '../controllers/user.controller.js'
 
 import { body, param } from 'express-validator';
@@ -33,6 +33,8 @@ userRouter.patch('/:id', param('id').custom(value => isCuid(value)), modifyUser)
 userRouter.delete('/:id', param('id').custom(value => isCuid(value)), deleteUser);
 
 userRouter.get('/user-messages/:id', getUserMessages);
+
+userRouter.get('/ReportedUser', getReportedUser)
 
 userRouter.post('/block', blockUser);
 
