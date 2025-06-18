@@ -1,7 +1,4 @@
-version: "3.8"
-
 services:
-  # Base de données MongoDB
   mongodb:
     image: mongo:${MONGO_VERSION:-latest}
     restart: always
@@ -16,13 +13,12 @@ services:
     networks:
       - db
 
-  # Base de données PostgreSQL
   postegredb:
     image: postgres:${POSTGRES_VERSION:-latest}
     restart: always
     container_name: postegredb
     ports:
-      - "5432:5432"
+      - 5432:5432
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -31,14 +27,24 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-app}
     networks:
       - db
+  postegredb2:
+    image: postgres:${POSTGRES_VERSION:-latest}
+    restart: always
+    ports:
+      - 5433:5432
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: app
+    networks:
+      - db
 
-  # Interface d'administration pour PostgreSQL
   adminer:
     image: michalhosna/adminer
     restart: always
     container_name: adminer
     ports:
-      - "8081:8080"
+      - 8081:8080
     depends_on:
       - postegredb
       - mongodb
@@ -49,13 +55,12 @@ services:
       ADMINER_DESIGN: nette
       ADMINER_DB: ${POSTGRES_DB:-app}
       ADMINER_DRIVER: pgsql
-      ADMINER_PASSWORD: ${POSTGRES_PASSWORD:-example}
+      ADMINER_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
       ADMINER_SERVER: postegredb
-      ADMINER_USERNAME: ${POSTGRES_USER:-postgres}
+      ADMINER_USERNAME: ${POSTGRES_USER:-app}
       ADMINER_AUTOLOGIN: 1
       ADMINER_NAME: BreezySupport
 
-  # Interface d'administration pour MongoDB
   mongo-express:
     image: mongo-express:latest
     restart: always
@@ -71,155 +76,12 @@ services:
       ME_CONFIG_BASICAUTH: false
     networks:
       - db
-    command: npm run start
-
-  # Microservices
-  api-posts:
-    image: api:latest
-    restart: always
-    container_name: api-posts
-    ports:
-      - "3001:3000"
-    depends_on:
-      - mongodb
-      - postegredb
-    environment:
-      - SERVICE=posts
-      - API_PORT=3000
-    networks:
-      - app
-      - db
-    env_file:
-      - .env
-    command: npm run start
-
-  api-users:
-    image: api:latest
-    restart: always
-    container_name: api-users
-    ports:
-      - "3007:3000"
-    depends_on:
-      - mongodb
-      - postegredb
-    environment:
-      - SERVICE=users
-      - API_PORT=3000
-    networks:
-      - app
-      - db
-    env_file:
-      - .env
-    command: npm run start
-
-  api-websocket:
-    image: api:latest
-    restart: always
-    container_name: api-websocket
-    ports:
-      - "3003:3000"
-    depends_on:
-      - mongodb
-      - postegredb
-    environment:
-      - SERVICE=chat
-      - API_PORT=3000
-    networks:
-      - app
-      - db
-    env_file:
-      - .env
-    command: npm run websocket
-
-  api-auth:
-    image: api:latest
-    restart: always
-    container_name: api-auth
-    ports:
-      - "3004:3000"
-    depends_on:
-      - mongodb
-      - postegredb
-    environment:
-      - SERVICE=auth
-      - API_PORT=3000
-    networks:
-      - app
-      - db
-    env_file:
-      - .env
-    command: npm run start
-
-  api-admin:
-    image: api:latest
-    restart: always
-    container_name: api-admin
-    ports:
-      - "3005:3000"
-    depends_on:
-      - mongodb
-      - postegredb
-    environment:
-      - SERVICE=admin
-      - API_PORT=3000
-    networks:
-      - app
-      - db
-    env_file:
-      - .env
-    command: npm run start
-
-  api-tags:
-    image: api:latest
-    restart: always
-    container_name: api-tags
-    ports:
-      - "3006:3000"
-    depends_on:
-      - mongodb
-      - postegredb
-    environment:
-      - SERVICE=tags
-      - API_PORT=3000
-    networks:
-      - app
-      - db
-    env_file:
-      - .env
-    command: npm run start
-
-  # Reverse Proxy Caddy
-  caddy:
-    image: caddy:latest
-    restart: always
-    container_name: caddy
-    ports:
-      - "80:80"
-      - "443:443"
-      - "2019:2019"
-    volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - api-posts
-      - api-users
-      - api-websocket
-      - api-auth
-      - api-admin
-      - api-tags
-    networks:
-      - app
-    labels:
-      caddy: breezy-api.panini.simon511000.fr
-      caddy.reverse_proxy: "{{upstreams 80}}"
 
 networks:
   app:
   db:
 
 volumes:
-  mongodb_data:
-  postgres_data:
-  caddy_data:
-  caddy_config:
+  mongodb:
+  postegredb:
+  matomo:
