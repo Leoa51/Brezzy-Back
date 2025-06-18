@@ -9,11 +9,30 @@ import {
 import { body, param } from 'express-validator';
 
 import { isCuid } from '@paralleldrive/cuid2';
-// import { requiredFields } from '../middlewares/requiredFields.middleware.js'
+import multer from "multer";
+import path from 'path';
 
-// postRouter.post('/', requiredFields(['message', 'author']), createPost);
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+    files: 1
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const mimetype = allowedTypes.test(file.mimetype);
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
 
-postRouter.post('/', body('message').isString(), createPost); // TODO: Add media handling
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Unsupported file type. Only JPEG, PNG, GIF, and WebP are allowed.'));
+    }
+  }
+});
+
+postRouter.post('/', upload.single('image'), body('message').isString(), createPost);
 
 postRouter.get('/', getAllPosts);
 postRouter.get('/followers', getAllPostFromFollowers)

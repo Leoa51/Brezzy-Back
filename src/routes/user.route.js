@@ -3,13 +3,45 @@ import express from 'express';
 const userRouter = express.Router();
 import { isCuid } from '@paralleldrive/cuid2';
 import {
-    createUser, getAllUsers, getUserById, getUserByUsername, modifyUser, deleteUser,
-    toggleBlockUser, toggleFollowUser, getUserFollowers, getUserFollowing, getUserInfoById, getUserMessages, getMe, blockUser, unblockUser
+    createUser,
+    getAllUsers,
+    getUserById,
+    getUserByUsername,
+    modifyUser,
+    deleteUser,
+    toggleBlockUser,
+    toggleFollowUser,
+    getUserFollowers,
+    getUserFollowing,
+    getUserInfoById,
+    getUserMessages,
+    getMe,
+    blockUser,
+    unblockUser,
+    updateProfilePicture
 } from '../controllers/user.controller.js'
 
 import { body, param } from 'express-validator';
+import multer from "multer";
+
+const storage = multer.memoryStorage();
+const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|gif|webp/;
+        const mimetype = allowedTypes.test(file.mimetype);
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        if (mimetype && extname) {
+            return cb(null, true);
+        } else {
+            cb(new Error('Unsupported file type'));
+        }
+    }
+});
 
 userRouter.get('/me', getMe)
+
 userRouter.post('/', body('username').isString(), body('name').isString().notEmpty(), body('firstName').isString().notEmpty(), body('email').isEmail().notEmpty(), body('password').isStrongPassword().notEmpty(), body('bio').isString(), body('language').isString().notEmpty(), createUser);
 
 userRouter.get('/', getAllUsers);
@@ -37,5 +69,8 @@ userRouter.get('/user-messages/:id', getUserMessages);
 userRouter.post('/block', blockUser);
 
 userRouter.post('/unblock', unblockUser);
+
+userRouter.put('/profile-picture', upload.single('profilePicture'), updateProfilePicture);
+
 
 export default userRouter;

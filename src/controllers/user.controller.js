@@ -34,8 +34,6 @@ export async function createUser(req, res) {
         // Hash password
         // const saltRounds = 10;
         // const hashedPassword = await bcrypt.hash(password, saltRounds);
-        // const saltRounds = 10;
-        // const hashedPassword = await bcrypt.hash(password, saltRounds);
 
         const newUser = await prisma.user_.create({
             data: {
@@ -157,7 +155,6 @@ export async function getUserById(req, res) {
                 id: true,
                 username: true,
                 name: true,
-                firstName: true,
                 firstName: true,
                 email: true,
                 bio: true,
@@ -910,6 +907,104 @@ export async function getMe(req, res) {
     } catch (err) {
         console.error("Error retrieving user info:", err);
         return res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+
+
+export async function updateProfilePicture(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    const userId = req.user.id;
+
+    if (!req.file) {
+        return res.status(400).json({
+            error: "No profile picture provided"
+        });
+    }
+
+    try {
+        const currentUser = await prisma.user_.findUnique({
+            where: { id: userId },
+            select: { ppPath: true }
+        });
+
+        if (!currentUser) {
+            return res.status(404).json({
+                error: "User not found"
+            });
+        }
+
+        const formData = new FormData();
+        const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
+        formData.append('image', blob, `profile_${userId}_${req.file.originalname}`);
+
+        const uploadResponse = await fetch('http://localhost:3100/api/media/upload', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'User-Agent': 'UserService/1.0'
+            }
+        });
+
+        if (!uploadResponse.ok) {
+            const errorText = await uploadResponse.text();
+            throw new Error(`Profile picture upload failed: ${uploadResponse.status} - ${errorText}`);
+        }
+
+        const uploadResult = await uploadResponse.json();
+
+        if (uploadResult.success && uploadResult.data) {
+            const updatedUser = await prisma.user_.update({
+                where: { id: userId },
+                data: {
+                    ppPath: uploadResult.data.path
+                },
+                select: {
+                    id: true,
+                    username: true,
+                    name: true,
+                    ppPath: true,
+                    email: true,
+                    bio: true
+                }
+            });
+
+            if (currentUser.ppPath) {
+                try {
+                    await fetch(`http://localhost:3100/api/media/delete/${encodeURIComponent(currentUser.ppPath)}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'User-Agent': 'UserService/1.0'
+                        }
+                    });
+                } catch (deleteError) {
+                    console.error("Failed to delete old profile picture:", deleteError.message);
+                }
+            }
+
+            res.status(200).json({
+                message: "Profile picture updated successfully",
+                user: updatedUser,
+                profilePicture: uploadResult.data.path
+            });
+
+        } else {
+            console.error("Invalid upload response structure:", uploadResult);
+            res.status(500).json({
+                error: "Profile picture upload failed"
+            });
+        }
+
+    } catch (err) {
+        console.error("Error updating profile picture:", err);
+        res.status(500).json({
             error: "Internal server error",
             details: err.message
         });
