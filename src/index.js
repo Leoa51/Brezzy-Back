@@ -40,6 +40,11 @@ switch (process.env.SERVICE) {
   case 'auth':
     app.use('/api/auth', authRouter)
   default:
+    app.use('/api/auth', authRouter)
+    app.use('/api/conversations', authMiddleware, conversationRouter);
+    app.use('/api/posts', authMiddleware, postsRouter);
+    app.use('/api/users', authMiddleware, usersRouter);
+    app.use('/api/tags', authMiddleware, tagsRouter);
     break;
 }
 
