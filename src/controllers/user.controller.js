@@ -44,7 +44,6 @@ export async function createUser(req, res) {
                 firstName,
                 email,
                 passwordHash: password,
-                passwordHash: password,
                 bio: bio || null,
                 ppPath: ppPath || null,
                 language: language || null,
@@ -181,12 +180,6 @@ export async function getUserById(req, res) {
                                 linkImages: true,
                                 linkVideos: true,
                                 publications: true
-                                commentsOnThis: true,
-                                tags: true,
-                                reports: true,
-                                linkImages: true,
-                                linkVideos: true,
-                                publications: true
                             }
                         }
                     },
@@ -194,14 +187,12 @@ export async function getUserById(req, res) {
                         createdAt: 'desc'
                     },
                     take: 10
-                    take: 10
                 },
                 _count: {
                     select: {
                         posts: true,
                         followers: true,
                         following: true,
-                        likes: true
                         likes: true
                     }
                 }
