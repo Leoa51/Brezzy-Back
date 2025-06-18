@@ -8,7 +8,7 @@ import {
 } from '../controllers/user.controller.js'
 
 import { body, param } from 'express-validator';
-
+userRouter.get('/reportedUser', getReportedUser)
 userRouter.get('/me', getMe)
 
 userRouter.post('/', body('username').isString(), body('name').isString().notEmpty(), body('firstName').isString().notEmpty(), body('email').isEmail().notEmpty(), body('password').isStrongPassword().notEmpty(), body('bio').isString(), body('language').isString().notEmpty(), createUser);
@@ -37,7 +37,6 @@ userRouter.delete('/:id', param('id').custom(value => isCuid(value)), deleteUser
 
 userRouter.get('/user-messages/:id', getUserMessages);
 
-userRouter.get('/ReportedUser', getReportedUser)
 
 userRouter.post('/block', blockUser);
 

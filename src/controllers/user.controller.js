@@ -4,12 +4,7 @@ import { validationResult } from 'express-validator';
 const prisma = new PrismaClient();
 
 export async function getReportedUser(req, res) {
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(422).json({ errors: errors.array() });
-    }
-
+    console.log('in')
     try {
         const reportedUsers = await prisma.user_.findMany({
             where: {
@@ -18,7 +13,6 @@ export async function getReportedUser(req, res) {
                 }
             },
             select: {
-                id: true,
                 firstName: true,
                 name: true,
                 email: true,
@@ -973,7 +967,9 @@ export async function getMe(req, res) {
                 validated: true,
                 isBlocked: true,
                 createdAt: true,
-                updatedAt: true
+                updatedAt: true,
+                role: true
+
             }
         });
 
