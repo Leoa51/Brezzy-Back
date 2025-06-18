@@ -4,7 +4,7 @@ const postRouter = express.Router();
 
 import {
   createPost, getAllPosts, getPostById, modifyPost, deletePost, getPostComments, likePost,
-  getAllPostFromFollowers
+  getAllPostFromFollowers, getIsLiked, getLikedPostsByUser
 } from '../controllers/post.controller.js'
 import { body, param } from 'express-validator';
 
@@ -16,7 +16,9 @@ import { isCuid } from '@paralleldrive/cuid2';
 postRouter.post('/', body('message').isString(), createPost); // TODO: Add media handling
 
 postRouter.get('/', getAllPosts);
+
 postRouter.get('/followers', getAllPostFromFollowers)
+
 postRouter.get('/:id', param('id').custom(value => isCuid(value)), getPostById);
 
 postRouter.patch('/:id', param('id').custom(value => isCuid(value)), modifyPost);
@@ -27,4 +29,9 @@ postRouter.get('/comments/:postId', getPostComments);
 
 postRouter.post('/like', body('postId').custom(value => isCuid(value)).notEmpty(), likePost);
 
+postRouter.get('/isLiked/:postId', param('postId').custom(value => isCuid(value)).notEmpty(), getIsLiked);
+
+postRouter.get('/liked/:userId', param('userId').custom(value => isCuid(value)).notEmpty(), getLikedPostsByUser);
+
 export default postRouter;
+
