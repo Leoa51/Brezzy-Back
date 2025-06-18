@@ -14,7 +14,36 @@ const port = 3000;
 
 app.use(express.json());
 
+<<<<<<< Updated upstream
 app.use('/api/tasks', require('./routes/tasks.route'));
+=======
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+}));
+
+
+switch (process.env.SERVICE) {
+  case 'tags':
+    app.use('/api/tags', authMiddleware, tagsRouter);
+    break;
+  case 'users':
+    app.use('/api/users', authMiddleware, usersRouter);
+  case 'posts':
+    app.use('/api/posts', authMiddleware, postsRouter);
+  case 'chat':
+    app.use('/api/conversations', authMiddleware, conversationRouter);
+  case 'auth':
+    app.use('/api/auth', authRouter)
+  default:
+    app.use('/api/auth', authRouter)
+    app.use('/api/conversations', authMiddleware, conversationRouter);
+    app.use('/api/posts', authMiddleware, postsRouter);
+    app.use('/api/users', authMiddleware, usersRouter);
+    app.use('/api/tags', authMiddleware, tagsRouter);
+    break;
+}
+>>>>>>> Stashed changes
 
 // Définition d'une route GET pour la racine du site ('/')
 // Lorsque quelqu'un accède à cette route, une réponse "Hello World!" est envoyée
