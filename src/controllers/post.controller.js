@@ -2,6 +2,38 @@ import { PrismaClient } from '@prisma/client';
 import { validationResult } from 'express-validator';
 const prisma = new PrismaClient();
 
+export async function getReportedPost(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+    try {
+        const reportedPosts = await prisma.post.findMany({
+            where: {
+                reports: {
+                    some: {}
+                }
+            },
+            select: {
+                id: true,
+                message: true,
+                createdAt: true,
+                _count: {
+                    select: {
+                        reports: true
+                    }
+                }
+            }
+        });
+
+
+        res.status(200).json(reportedPosts);
+    } catch (error) {
+        console.error("Erreur lors de la récupération des Posts signalés :", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+}
+
 export async function createPost(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

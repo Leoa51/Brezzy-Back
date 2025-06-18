@@ -4,11 +4,12 @@ const postRouter = express.Router();
 
 import {
   createPost, getAllPosts, getPostById, modifyPost, deletePost, getPostComments, likePost,
-  getAllPostFromFollowers, getIsLiked, getLikedPostsByUser
+  getAllPostFromFollowers, getIsLiked, getLikedPostsByUser, getReportedPost
 } from '../controllers/post.controller.js'
 import { body, param } from 'express-validator';
 
 import { isCuid } from '@paralleldrive/cuid2';
+import { getReportedUser } from '../controllers/user.controller.js';
 // import { requiredFields } from '../middlewares/requiredFields.middleware.js'
 
 // postRouter.post('/', requiredFields(['message', 'author']), createPost);
@@ -16,7 +17,7 @@ import { isCuid } from '@paralleldrive/cuid2';
 postRouter.post('/', body('message').isString(), createPost); // TODO: Add media handling
 
 postRouter.get('/', getAllPosts);
-
+postRouter.get('/reported', getReportedPost)
 postRouter.get('/followers', getAllPostFromFollowers)
 
 postRouter.get('/:id', param('id').custom(value => isCuid(value)), getPostById);
