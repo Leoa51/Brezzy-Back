@@ -2,6 +2,63 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { validationResult } from 'express-validator';
 const prisma = new PrismaClient();
+export async function getBannedUser(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(422).json({ errors: errors.array() });
+    }
+    try {
+        const reportedUsers = await prisma.user_.findMany({
+            where: {
+                isBlocked: true
+            },
+            select: {
+                id: true,
+                firstName: true,
+                name: true,
+                email: true,
+                username: true,
+                createdAt: true,
+                isBlocked: true
+            }
+        });
+
+        res.status(200).json(reportedUsers);
+    } catch (error) {
+        console.error("Erreur lors de la récupération des utilisateurs signalés :", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+}
+export async function getReportedUser(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(422).json({ errors: errors.array() });
+    }
+    try {
+        const reportedUsers = await prisma.user_.findMany({
+            where: {
+                userReports: {
+                    some: {}
+                },
+                isBlocked: false
+            },
+            select: {
+                id: true,
+                firstName: true,
+                name: true,
+                email: true,
+                username: true,
+                createdAt: true,
+                isBlocked: true
+            }
+        });
+
+        res.status(200).json(reportedUsers);
+    } catch (error) {
+        console.error("Erreur lors de la récupération des utilisateurs signalés :", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+}
 
 export async function createUser(req, res) {
     const errors = validationResult(req);
@@ -942,7 +999,9 @@ export async function getMe(req, res) {
                 validated: true,
                 isBlocked: true,
                 createdAt: true,
-                updatedAt: true
+                updatedAt: true,
+                role: true
+
             }
         });
 
