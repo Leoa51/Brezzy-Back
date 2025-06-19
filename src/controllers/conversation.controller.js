@@ -49,7 +49,9 @@ export async function getConversationById(req, res) {
       return res.status(403).send("You are not in the conversation");
     }
 
-    res.status(200).json(conversation);
+    console.log(conversation)
+    return res.status(200).json(conversation);
+
   } catch (err) {
     res.status(500).json(err);
   }
