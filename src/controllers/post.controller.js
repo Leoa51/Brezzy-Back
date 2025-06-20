@@ -7,8 +7,10 @@ export async function createPost(req, res) {
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
+
     const { message, originalPostId, parentCommentId } = req.body;
-    const author = req.user.id
+    const author = req.user.id;
+
     if (!message || !author) {
         return res.status(400).json({
             error: "Message and author are required"
@@ -33,12 +35,66 @@ export async function createPost(req, res) {
             }
         });
 
+        let uploadedImage = null;
+
+        if (req.file) {
+            try {
+                const formData = new FormData();
+                const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
+                formData.append('image', blob, req.file.originalname);
+
+                const uploadResponse = await fetch('http://localhost:3100/api/media/upload', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'User-Agent': 'PostService/1.0'
+                    }
+                });
+
+                if (!uploadResponse.ok) {
+                    const errorText = await uploadResponse.text();
+                    throw new Error(`Image upload failed: ${uploadResponse.status} - ${errorText}`);
+                }
+
+                const uploadResult = await uploadResponse.json();
+
+                if (uploadResult.success && uploadResult.data) {
+                    const createdImage = await prisma.image.create({
+                        data: {
+                            cdnPath: uploadResult.data.path,
+                            author: req.user.id
+                        }
+                    });
+
+                    const linkImg = await prisma.linkImg.create({
+                        data: {
+                            imageId: createdImage.id,
+                            postAuthor: newPost.id,
+                            linkAuthor: req.user.id
+                        }
+                    });
+
+                    uploadedImage = uploadResult.data.path;
+                } else {
+                    console.error("Invalid upload response structure:", uploadResult);
+                }
+
+            } catch (uploadError) {
+                console.error("Image upload error:", uploadError.message);
+            }
+        }
+
         if (originalPostId) {
             const originalPost = await prisma.post.findUnique({
                 where: { id: originalPostId }
             });
 
             if (!originalPost) {
+                if (uploadedImage) {
+                    await prisma.image.deleteMany({
+                        where: { cdnPath: uploadedImage }
+                    });
+                }
                 await prisma.post.delete({ where: { id: newPost.id } });
                 return res.status(404).json({
                     error: "Original post not found"
@@ -51,6 +107,11 @@ export async function createPost(req, res) {
                 });
 
                 if (!parentComment || parentComment.postId !== originalPostId) {
+                    if (uploadedImage) {
+                        await prisma.image.deleteMany({
+                            where: { cdnPath: uploadedImage }
+                        });
+                    }
                     await prisma.post.delete({ where: { id: newPost.id } });
                     return res.status(400).json({
                         error: "Invalid parent comment"
@@ -69,6 +130,7 @@ export async function createPost(req, res) {
             return res.status(201).json({
                 message: parentCommentId ? "Reply created successfully" : "Comment created successfully",
                 post: newPost,
+                image: uploadedImage,
                 type: "comment"
             });
         }
@@ -76,8 +138,10 @@ export async function createPost(req, res) {
         res.status(201).json({
             message: "Post created successfully",
             post: newPost,
+            image: uploadedImage,
             type: "post"
         });
+
     } catch (err) {
         console.error("Error creating post:", err);
         res.status(500).json({
@@ -86,28 +150,38 @@ export async function createPost(req, res) {
         });
     }
 }
+
+
+
+
+
+
+
+
+
 export async function getAllPostFromFollowers(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const { userId } = req.user.id;
+    const userId = req.user.id;
     const { page = 1, limit = 20 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     try {
-        // Récupérer les posts des utilisateurs suivis par userId
+        const followedUsers = await prisma.follow.findMany({
+            where: { followerId: userId },
+            select: { followedId: true }
+        });
+
+        const followedIds = followedUsers.map(f => f.followedId);
+
         const posts = await prisma.post.findMany({
             where: {
                 thisIsComment: null,
                 author: {
-                    in: (
-                        await prisma.follow.findMany({
-                            where: { followerId: userId },
-                            select: { followedId: true }
-                        })
-                    ).map(f => f.followedId)
+                    in: followedIds
                 }
             },
             include: {
@@ -217,6 +291,7 @@ export async function getPostById(req, res) {
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
+
     try {
         const postId = req.params.id;
 
@@ -273,6 +348,7 @@ export async function getPostComments(req, res) {
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
+
     try {
         const { postId } = req.params;
         const { page = 1, limit = 20 } = req.query;
@@ -372,6 +448,7 @@ export async function deletePost(req, res) {
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
+
     try {
         const postId = req.params.id;
 
@@ -385,8 +462,7 @@ export async function deletePost(req, res) {
             });
         }
 
-        if (post.author !== req.user.id
-        ) {
+        if (post.author !== req.user.id) {
             return res.status(403).json({
                 error: "You can only delete your own posts"
             });
@@ -413,6 +489,7 @@ export async function modifyPost(req, res) {
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
+
     try {
         const postId = req.params.id;
         const { message } = req.body;
@@ -468,13 +545,12 @@ export async function modifyPost(req, res) {
 }
 
 export async function likePost(req, res) {
-    console.log(req)
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
-    const { postId } = req.body;
 
+    const { postId } = req.body;
 
     try {
         const postExists = await prisma.post.findUnique({
@@ -704,20 +780,6 @@ export async function reportPost(req, res) {
             }
         });
 
-        // if (existingReport) {
-        //     await prisma.reportPost.delete({
-        //         where: {
-        //             idPost_author: {
-        //                 idPost: postId,
-        //                 author: userId
-        //             }
-        //         }
-        //     });
-        //
-        //     res.status(200).json({
-        //         message: "Post reported successfully"
-        //     });
-        // } else {
         if (!existingReport) {
             await prisma.reportPost.create({
                 data: {
