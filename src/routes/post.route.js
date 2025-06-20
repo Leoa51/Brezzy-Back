@@ -6,16 +6,24 @@ import {
   createPost, getAllPosts, getPostById, modifyPost, deletePost, getPostComments, likePost,
   getAllPostFromFollowers, getIsLiked, getLikedPostsByUser
 } from '../controllers/post.controller.js'
-import { body, param } from 'express-validator';
+import { body, param, query } from 'express-validator';
 
 import { isCuid } from '@paralleldrive/cuid2';
-// import { requiredFields } from '../middlewares/requiredFields.middleware.js'
-
-// postRouter.post('/', requiredFields(['message', 'author']), createPost);
 
 postRouter.post('/', body('message').isString(), createPost); // TODO: Add media handling
 
-postRouter.get('/', getAllPosts);
+// enhanced search
+postRouter.get(
+  "/",
+  [
+    query("page").optional().isInt({ min: 1 }),
+    query("limit").optional().isInt({ min: 1, max: 100 }),
+    query("authorName").optional().isString(),
+    query("keyword").optional().isString(),
+    query("tag").optional().isString(),
+  ],
+  getAllPosts
+);
 
 postRouter.get('/followers', getAllPostFromFollowers)
 
