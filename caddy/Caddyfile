@@ -5,6 +5,9 @@
 
 
 localhost:80 {
+    handle /api/media/* {
+        reverse_proxy minio:9001
+    }
     handle /api/auth/* {
         reverse_proxy api-auth:3000
     }

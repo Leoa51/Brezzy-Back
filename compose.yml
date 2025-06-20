@@ -208,12 +208,12 @@ services:
       - api-auth
       - api-admin
       - api-tags
+      - minio
     networks:
       - app
     labels:
       caddy: breezy-api.panini.simon511000.fr
       caddy.reverse_proxy: "{{upstreams 80}}"
-
 
   minio:
     image: minio/minio:latest
