@@ -15,6 +15,7 @@ import {
     getUserFollowing,
     getUserInfoById,
     getUserMessages,
+    getIsFollowing,
     getMe,
     blockUser,
     unblockUser,
