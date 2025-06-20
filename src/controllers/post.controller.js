@@ -43,7 +43,7 @@ export async function createPost(req, res) {
                 const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
                 formData.append('image', blob, req.file.originalname);
 
-                const uploadResponse = await fetch('http://localhost:3100/api/media/upload', {
+                const uploadResponse = await fetch('process.env.API_URI + /api/media/upload', {
                     method: 'POST',
                     body: formData,
                     headers: {

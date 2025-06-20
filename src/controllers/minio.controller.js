@@ -409,7 +409,7 @@ export async function clearCache(req, res) {
 }
 
 function generateImageUrls(imagePath) {
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3100';
+    const baseUrl = process.env.API_URI || 'http://localhost:3100';
 
     return {
         api: {
