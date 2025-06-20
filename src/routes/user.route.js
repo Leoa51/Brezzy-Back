@@ -4,8 +4,7 @@ const userRouter = express.Router();
 import { isCuid } from '@paralleldrive/cuid2';
 import {
     createUser, getAllUsers, getUserById, getUserByUsername, modifyUser, deleteUser,
-    toggleBlockUser, toggleFollowUser, getUserFollowers, getUserFollowing, getUserInfoById, getUserMessages, getMe, blockUser, unblockUser,
-    getReportedUser
+    toggleBlockUser, toggleFollowUser, getUserFollowers, getUserFollowing, getUserInfoById, getUserMessages, getMe, blockUser, unblockUser, getIsFollowing
 } from '../controllers/user.controller.js'
 
 import { body, param } from 'express-validator';
@@ -21,6 +20,8 @@ userRouter.patch('/:id/toggle-block', param('id').custom(value => isCuid(value))
 
 userRouter.post('/toggle-follow', toggleFollowUser);
 
+userRouter.get('/isFollowing/:id', getIsFollowing)
+
 userRouter.get('/:id/followers', param('id').custom(value => isCuid(value)), getUserFollowers);
 
 userRouter.get('/:id/following', param('id').custom(value => isCuid(value)), getUserFollowing);
@@ -34,7 +35,6 @@ userRouter.patch('/:id', param('id').custom(value => isCuid(value)), modifyUser)
 userRouter.delete('/:id', param('id').custom(value => isCuid(value)), deleteUser);
 
 userRouter.get('/user-messages/:id', getUserMessages);
-userRouter.get('/userReported', getReportedUser)
 userRouter.post('/block', blockUser);
 
 userRouter.post('/unblock', unblockUser);

@@ -142,53 +142,6 @@ export async function getAllUsers(req, res) {
     }
 }
 
-export async function getReportedUser(req, res) {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(422).json({ errors: errors.array() });
-    }
-
-    try {
-        const reportedUsers = await prisma.user_.findMany({
-            where: {
-                userReports: {
-                    some: {},
-                },
-            },
-            select: {
-                id: true,
-                firstName: true,
-                name: true,
-                username: true,
-                validated: true,
-                bio: true,
-                ppPath: true,
-                language: true,
-                isBlocked: true,
-                createdAt: true,
-                updatedAt: true,
-                role: true,
-                tagAssocs: true,
-                followers: true,
-                following: true,
-                images: true,
-                likes: true,
-                participants: true,
-                posts: true,
-                reports: true,
-                userReports: true,
-                reportsMade: true,
-                videos: true,
-                linkImages: true,
-                linkVideos: true,
-                publications: true,
-            },
-        });
-        res.status(200).json(reportedUsers)
-    } catch {
-
-    }
-}
 export async function getUserById(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -225,7 +178,7 @@ export async function getUserById(req, res) {
                                 reports: true,
                                 linkImages: true,
                                 linkVideos: true,
-                                publications: true
+                                publications: true,
                             }
                         }
                     },
@@ -541,7 +494,49 @@ export async function toggleBlockUser(req, res) {
         });
     }
 }
+export async function getIsFollowing(req, res) {
+    try {
+        const targetUserId = req.params.id;
+        const currentUserId = req.user.id;
 
+        if (!targetUserId) {
+            return res.status(400).json({
+                success: false,
+                error: "ID utilisateur manquant"
+            });
+        }
+
+        if (targetUserId === currentUserId) {
+            return res.status(400).json({
+                success: false,
+                error: "Impossible de vérifier si vous vous suivez vous-même"
+            });
+        }
+        const followRelation = await prisma.follow.findUnique({
+            where: {
+                followerId_followedId: {
+                    followerId: currentUserId,
+                    followedId: targetUserId
+                }
+            }
+        });
+
+        const isFollowing = followRelation !== null;
+
+
+        return res.status(200).json({
+            success: true,
+            following: isFollowing,
+        });
+
+    } catch (error) {
+        console.error(" Erreur vérification isFollowing:", error);
+        return res.status(500).json({
+            success: false,
+            error: "Erreur serveur lors de la vérification du statut de follow"
+        });
+    }
+}
 export async function toggleFollowUser(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -549,7 +544,9 @@ export async function toggleFollowUser(req, res) {
     }
 
     try {
-        const { followerId, followedId } = req.body;
+
+        const { followedId } = req.body;
+        const followerId = req.user.id;
 
         if (!followerId || !followedId) {
             return res.status(400).json({
@@ -944,8 +941,7 @@ export async function getMe(req, res) {
                 validated: true,
                 isBlocked: true,
                 createdAt: true,
-                updatedAt: true,
-                role: true
+                updatedAt: true
             }
         });
 

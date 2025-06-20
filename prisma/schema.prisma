@@ -7,12 +7,6 @@ datasource db {
   url      = env("POSTEGRE_DATABASE_URL")
 }
 
-enum Role {
-  user
-  moderation
-  admin
-}
-
 model User_ {
   id           String         @id @default(cuid())
   firstName    String
@@ -27,7 +21,6 @@ model User_ {
   isBlocked    Boolean        @default(false) @map("is_blocked")
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
-  role         Role           @default(user)
   tagAssocs    Asso11[]
   followers    Follow[]       @relation("FollowedUser")
   following    Follow[]       @relation("FollowerUser")

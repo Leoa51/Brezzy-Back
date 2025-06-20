@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 
 function Counter() {
-    // État local pour stocker le compteur avec une valeur initiale de 0
     const [count, setCount] = useState(0);
 
     return (
