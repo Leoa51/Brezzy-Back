@@ -2,7 +2,7 @@
 .env
 node_modules
 package-lock.json
-data/
+data/*
 
 /src/prisma
 
