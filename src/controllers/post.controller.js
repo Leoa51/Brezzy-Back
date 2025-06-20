@@ -143,38 +143,52 @@ export async function getAllPostFromFollowers(req, res) {
     }
 }
 export async function getAllPosts(req, res) {
-    const errors = validationResult(req)
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
 
     try {
-        const { page = 1, limit = 20, authorName, keyword, tag } = req.query
-        const skip = (Number(page) - 1) * Number(limit)
+        const { page = 1, limit = 20, keyword } = req.query;
+        const skip = (page - 1) * limit;
 
-        const where = { thisIsComment: null }
-        if (authorName) {
-            where.user = {
-                OR: [
-                    { username: { contains: authorName, mode: 'insensitive' } },
-                    { name: { contains: authorName, mode: 'insensitive' } }
-                ]
-            }
+        const where = { thisIsComment: null };
+        if (keyword) {
+            where.OR = [
+                { message: { contains: keyword, mode: 'insensitive' } },
+                { user: { username: { contains: keyword, mode: 'insensitive' } } },
+                { user: { name: { contains: keyword, mode: 'insensitive' } } },
+                { tags: { some: { tag: { name: { contains: keyword, mode: 'insensitive' } } } } }
+            ];
         }
-        if (keyword) where.message = { contains: keyword, mode: 'insensitive' }
-        if (tag) where.tags = { some: { tag: { name: { contains: tag, mode: 'insensitive' } } } }
 
-        let posts = await prisma.post.findMany({
+        const posts = await prisma.post.findMany({
             where,
             include: {
-                user: { select: { id: true, username: true, name: true, ppPath: true } },
-                _count: { select: { commentsOnThis: true, likes: true } }
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        name: true,
+                        ppPath: true
+                    }
+                },
+                _count: {
+                    select: {
+                        commentsOnThis: true,
+                        likes: true
+                    }
+                }
             },
             orderBy: { createdAt: 'desc' },
-            skip,
-            take: Number(limit)
-        })
-        const totalPosts = await prisma.post.count({ where })
-        const totalPages = Math.ceil(totalPosts / Number(limit))
-        const currentPage = Number(page)
+            skip: parseInt(skip),
+            take: parseInt(limit)
+        });
+
+        const totalPosts = await prisma.post.count({ where });
+
+        const totalPages = Math.ceil(totalPosts / parseInt(limit));
+        const currentPage = parseInt(page);
 
         res.status(200).json({
             posts,
@@ -182,13 +196,14 @@ export async function getAllPosts(req, res) {
                 currentPage,
                 totalPages,
                 totalPosts,
-                limit: Number(limit),
+                limit: parseInt(limit),
                 hasMore: currentPage < totalPages,
                 hasPrevious: currentPage > 1
             }
-        })
+        });
     } catch (err) {
-        res.status(500).json({ error: 'Internal server error', details: err.message })
+        console.error('Error fetching posts:', err);
+        res.status(500).json({ error: 'Internal server error', details: err.message });
     }
 }
 

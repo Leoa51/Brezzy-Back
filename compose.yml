@@ -28,17 +28,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-app}
     networks:
       - db
-  postegredb2:
-    image: postgres:${POSTGRES_VERSION:-latest}
-    restart: always
-    ports:
-      - 5433:5432
-    environment:
-      POSTGRES_USER: test
-      POSTGRES_PASSWORD: example
-      POSTGRES_DB: app
-    networks:
-      - db
 
   adminer:
     image: michalhosna/adminer
