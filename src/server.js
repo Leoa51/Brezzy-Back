@@ -44,7 +44,6 @@ io.use(async (socket, next) => {
         });
 
         if (!user) throw new Error('User not found');
-
         socket.user = user;
         next();
     } catch (error) {
@@ -64,14 +63,14 @@ io.on('connection', (socket) => {
     });
 
     socket.on('conversation', async (data) => {
-        const participants = data.participants;
-
+        const participants = data;
         try {
             const newConversation = await Conversation.create({
                 participants,
                 messages: [],
             });
-
+            newConversation.save()
+            console.log('conv created')
             participants.forEach(participantId => {
                 const pid = participantId.toString();
                 if (usersSocketIds[pid]) {
@@ -84,6 +83,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('new_message', async (data) => {
+        console.log(data)
         const { conversationId, message, pictureUrl, videoUrl } = data;
         const author = socket.user.id;
 
@@ -113,10 +113,10 @@ io.on('connection', (socket) => {
             await conversation.save();
 
             const userIds = conversation.participants
-            console.log(userIds)
 
             userIds.forEach(uid => {
                 if (usersSocketIds[uid]) {
+                    console.log('send message')
                     io.to(usersSocketIds[uid]).emit('message', {
                         conversationId,
                         message: newMessage

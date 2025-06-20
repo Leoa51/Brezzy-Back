@@ -52,6 +52,8 @@ userRouter.patch('/:id/toggle-block', param('id').custom(value => isCuid(value))
 
 userRouter.post('/toggle-follow', toggleFollowUser);
 
+userRouter.get('/isFollowing/:id', getIsFollowing)
+
 userRouter.get('/:id/followers', param('id').custom(value => isCuid(value)), getUserFollowers);
 
 userRouter.get('/:id/following', param('id').custom(value => isCuid(value)), getUserFollowing);
@@ -65,7 +67,6 @@ userRouter.patch('/:id', param('id').custom(value => isCuid(value)), modifyUser)
 userRouter.delete('/:id', param('id').custom(value => isCuid(value)), deleteUser);
 
 userRouter.get('/user-messages/:id', getUserMessages);
-
 userRouter.post('/block', blockUser);
 
 userRouter.post('/unblock', unblockUser);

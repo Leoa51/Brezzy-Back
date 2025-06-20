@@ -1,7 +1,4 @@
-version: "3.8"
-
 services:
-  # Base de données MongoDB
   mongodb:
     image: mongo:${MONGO_VERSION:-latest}
     restart: always
@@ -22,7 +19,7 @@ services:
     restart: always
     container_name: postgredb
     ports:
-      - "5432:5432"
+      - 5432:5432
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     environment:
@@ -31,14 +28,24 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-app}
     networks:
       - db
+  postegredb2:
+    image: postgres:${POSTGRES_VERSION:-latest}
+    restart: always
+    ports:
+      - 5433:5432
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: app
+    networks:
+      - db
 
-  # Interface d'administration pour PostgreSQL
   adminer:
     image: michalhosna/adminer
     restart: always
     container_name: adminer
     ports:
-      - "8081:8080"
+      - 8081:8080
     depends_on:
       - postgredb
       - mongodb
@@ -55,7 +62,6 @@ services:
       ADMINER_AUTOLOGIN: 1
       ADMINER_NAME: BreezySupport
 
-  # Interface d'administration pour MongoDB
   mongo-express:
     image: mongo-express:latest
     restart: always
@@ -71,7 +77,6 @@ services:
       ME_CONFIG_BASICAUTH: false
     networks:
       - db
-    command: npm run start
 
   # Microservices
   api-posts:
@@ -239,7 +244,6 @@ networks:
   db:
 
 volumes:
-  mongodb_data:
-  postgres_data:
-  caddy_data:
-  caddy_config:
+  mongodb:
+  postegredb:
+  matomo:
