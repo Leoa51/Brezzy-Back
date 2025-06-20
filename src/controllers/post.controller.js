@@ -2,13 +2,15 @@ import { PrismaClient } from '@prisma/client';
 import { validationResult } from 'express-validator';
 const prisma = new PrismaClient();
 
+
 export async function createPost(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
-    const { message, originalPostId, parentCommentId } = req.body;
-    const author = req.user.id
+
+    const { message, originalPostId, parentCommentId, tags, image } = req.body;
+    const author = req.user.id;
     if (!message || !author) {
         return res.status(400).json({
             error: "Message and author are required"
@@ -22,39 +24,89 @@ export async function createPost(req, res) {
                 author
             },
             include: {
-                user: {
-                    select: {
-                        id: true,
-                        username: true,
-                        name: true,
-                        ppPath: true
-                    }
-                }
+                user: { select: { id: true, username: true, name: true, ppPath: true } }
             }
         });
 
+        let uploadedImage = null;
+
+        if (image) {
+            try {
+                const uploadResponse = await fetch(process.env.API_URI + "/api/media/upload", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", 'User-Agent': 'PostService/1.0' },
+                    body: JSON.stringify({ image }),
+                });
+
+                if (!uploadResponse.ok) {
+                    const errorText = await uploadResponse.text();
+                    throw new Error(`Image upload failed: ${uploadResponse.status} - ${errorText}`);
+                }
+
+                const uploadResult = await uploadResponse.json();
+
+                if (uploadResult.success && uploadResult.data) {
+                    const createdImage = await prisma.image.create({
+                        data: {
+                            cdnPath: uploadResult.data.path,
+                            author: req.user.id
+                        }
+                    });
+
+                    await prisma.linkImg.create({
+                        data: {
+                            imageId: createdImage.id,
+                            postAuthor: newPost.id,
+                            linkAuthor: req.user.id
+                        }
+                    });
+
+                    uploadedImage = uploadResult.data.path;
+                }
+            } catch (uploadError) {
+                console.error("Image upload error:", uploadError.message);
+            }
+        }
+
+        if (tags && Array.isArray(tags)) {
+            for (const tagName of tags) {
+                const cleanName = tagName.replace(/^#/, '').trim().toLowerCase();
+                if (!cleanName) continue;
+                let tag = await prisma.tag.findFirst({ where: { name: cleanName } });
+                if (!tag) {
+                    tag = await prisma.tag.create({ data: { name: cleanName, idTag: cleanName } });
+                }
+                await prisma.asso11.upsert({
+                    where: { idTag_idPost: { idTag: tag.idTag, idPost: newPost.id } },
+                    update: {},
+                    create: {
+                        idTag: tag.idTag,
+                        idPost: newPost.id,
+                        author: req.user.id,
+                    }
+                });
+            }
+        }
         if (originalPostId) {
-            const originalPost = await prisma.post.findUnique({
-                where: { id: originalPostId }
-            });
+            const originalPost = await prisma.post.findUnique({ where: { id: originalPostId } });
 
             if (!originalPost) {
+                if (uploadedImage) {
+                    await prisma.image.deleteMany({ where: { cdnPath: uploadedImage } });
+                }
                 await prisma.post.delete({ where: { id: newPost.id } });
-                return res.status(404).json({
-                    error: "Original post not found"
-                });
+                return res.status(404).json({ error: "Original post not found" });
             }
 
             if (parentCommentId) {
-                const parentComment = await prisma.commentPost.findUnique({
-                    where: { id: parentCommentId }
-                });
+                const parentComment = await prisma.commentPost.findUnique({ where: { id: parentCommentId } });
 
                 if (!parentComment || parentComment.postId !== originalPostId) {
+                    if (uploadedImage) {
+                        await prisma.image.deleteMany({ where: { cdnPath: uploadedImage } });
+                    }
                     await prisma.post.delete({ where: { id: newPost.id } });
-                    return res.status(400).json({
-                        error: "Invalid parent comment"
-                    });
+                    return res.status(400).json({ error: "Invalid parent comment" });
                 }
             }
 
@@ -69,6 +121,7 @@ export async function createPost(req, res) {
             return res.status(201).json({
                 message: parentCommentId ? "Reply created successfully" : "Comment created successfully",
                 post: newPost,
+                image: uploadedImage,
                 type: "comment"
             });
         }
@@ -76,8 +129,10 @@ export async function createPost(req, res) {
         res.status(201).json({
             message: "Post created successfully",
             post: newPost,
+            image: uploadedImage,
             type: "post"
         });
+
     } catch (err) {
         console.error("Error creating post:", err);
         res.status(500).json({
@@ -85,7 +140,7 @@ export async function createPost(req, res) {
             details: err.message
         });
     }
-}
+};
 export async function getAllPostFromFollowers(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

@@ -4,13 +4,13 @@ import dotenv from 'dotenv';
 import cors from 'cors'
 import authMiddleware from './middleware/authMiddleware.js';
 import { authRouter } from './routes/auth.route.js';
+import minioRouter from './routes/minio.route.js';
+
 
 dotenv.config();
 
-// Création d'une instance de l'application Express
 const app = express();
 
-// Définition du port sur lequel le serveur écoutera les requêtes
 const port = process.env.API_PORT
 
 
@@ -18,6 +18,7 @@ import tagsRouter from './routes/tag.route.js'
 import postsRouter from './routes/post.route.js'
 import usersRouter from './routes/user.route.js'
 import conversationRouter from './routes/conversation.route.js'
+import notificationsRouter from './routes/notification.route.js'
 
 app.use(express.json());
 
@@ -39,12 +40,19 @@ switch (process.env.SERVICE) {
     app.use('/api/conversations', authMiddleware, conversationRouter);
   case 'auth':
     app.use('/api/auth', authRouter)
+  case 'media':
+    app.use('/api/media', authMiddleware, minioRouter);
+  case 'notifications':
+    app.use('/api/notifications', authMiddleware, notificationsRouter);
   default:
     app.use('/api/auth', authRouter)
     app.use('/api/conversations', authMiddleware, conversationRouter);
     app.use('/api/posts', authMiddleware, postsRouter);
     app.use('/api/users', authMiddleware, usersRouter);
     app.use('/api/tags', authMiddleware, tagsRouter);
+    app.use('/api/media', authMiddleware, minioRouter);
+    app.use('/api/notifications', authMiddleware, notificationsRouter);
+
     break;
 }
 

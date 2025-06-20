@@ -10,7 +10,7 @@ import { body, param, query } from 'express-validator';
 
 import { isCuid } from '@paralleldrive/cuid2';
 
-postRouter.post('/', body('message').isString(), createPost); // TODO: Add media handling
+postRouter.post('/', body('message').isString().notEmpty(), createPost);
 
 // enhanced search
 postRouter.get(
