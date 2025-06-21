@@ -723,7 +723,9 @@ export async function getLikedPostsByUser(req, res) {
 }
 
 export async function reportPost(req, res) {
-    const { postId, userId } = req.body;
+    const { reason } = req.body; // Changé de message à reason
+    const userId = req.user.id;
+    const postId = req.params.postId; // Ou idPost selon votre route
 
     if (!postId || !userId) {
         return res.status(400).json({
@@ -752,41 +754,32 @@ export async function reportPost(req, res) {
             });
         }
 
-        const existingReport = await prisma.reportPost.findUnique({
+        // Vérifier si un rapport existe déjà (sans contrainte unique)
+        const existingReport = await prisma.reportPost.findFirst({
             where: {
-                idPost_author: {
-                    idPost: postId,
-                    author: userId
-                }
+                idPost: postId,
+                author: userId
             }
         });
 
-        // if (existingReport) {
-        //     await prisma.reportPost.delete({
-        //         where: {
-        //             idPost_author: {
-        //                 idPost: postId,
-        //                 author: userId
-        //             }
-        //         }
-        //     });
-        //
-        //     res.status(200).json({
-        //         message: "Post reported successfully"
-        //     });
-        // } else {
         if (!existingReport) {
             await prisma.reportPost.create({
                 data: {
                     idPost: postId,
-                    author: userId
+                    author: userId,
+                    reason: reason || null
                 }
             });
 
             res.status(200).json({
                 message: "Post reported successfully"
             });
+        } else {
+            return res.status(200).json({
+                message: "Post already reported"
+            });
         }
+
     } catch (err) {
         console.error("Error reporting post:", err);
         res.status(500).json({

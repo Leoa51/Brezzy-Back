@@ -4,7 +4,7 @@ const postRouter = express.Router();
 
 import {
   createPost, getAllPosts, getPostById, modifyPost, deletePost, getPostComments, likePost,
-  getAllPostFromFollowers, getIsLiked, getLikedPostsByUser, getReportedPost
+  getAllPostFromFollowers, getIsLiked, getLikedPostsByUser, getReportedPost, reportPost
 } from '../controllers/post.controller.js'
 import { body, param } from 'express-validator';
 
@@ -17,7 +17,15 @@ import { getReportedUser } from '../controllers/user.controller.js';
 postRouter.post('/', body('message').isString(), createPost); // TODO: Add media handling
 
 postRouter.get('/', getAllPosts);
+
 postRouter.get('/reported', getReportedPost)
+
+postRouter.post('/:postId/report', [
+  param('postId').isString().notEmpty().withMessage('postId is required'),
+  body('reason').optional().isString().withMessage('Reason must be a string')
+], reportPost);
+
+
 postRouter.get('/followers', getAllPostFromFollowers)
 
 postRouter.get('/:id', param('id').custom(value => isCuid(value)), getPostById);

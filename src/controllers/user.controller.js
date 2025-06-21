@@ -340,7 +340,7 @@ export async function getUserByUsername(req, res) {
                         _count: {
                             select: {
                                 likes: true,
-                                comments: true
+                                commentsOnThis: true
                             }
                         }
                     },
@@ -978,6 +978,89 @@ export async function unblockUser(req, res) {
         });
     }
 }
+
+export async function reportUser(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(422).json({ errors: errors.array() });
+    }
+
+    const { reason } = req.body;
+    const reporterId = req.user.id;
+    const reportedId = req.params.id;
+
+    if (!reportedId || !reporterId) {
+        return res.status(400).json({
+            error: "reportedId and reporterId are required"
+        });
+    }
+
+    if (reportedId === reporterId) {
+        return res.status(400).json({
+            error: "Cannot report yourself"
+        });
+    }
+
+    try {
+        // Vérifier que l'utilisateur à signaler existe
+        const reportedUser = await prisma.user_.findUnique({
+            where: { id: reportedId }
+        });
+
+        if (!reportedUser) {
+            return res.status(404).json({
+                error: "Reported user not found"
+            });
+        }
+
+        const reporterUser = await prisma.user_.findUnique({
+            where: { id: reporterId }
+        });
+
+        if (!reporterUser) {
+            return res.status(404).json({
+                error: "Reporter user not found"
+            });
+        }
+
+        // Vérifier si un signalement existe déjà
+        const existingReport = await prisma.reportUser.findUnique({
+            where: {
+                reportedId_reporterId: {
+                    reportedId: reportedId,
+                    reporterId: reporterId
+                }
+            }
+        });
+
+        if (existingReport) {
+            return res.status(200).json({
+                message: "User already reported"
+            });
+        }
+
+        // Créer le nouveau signalement
+        await prisma.reportUser.create({
+            data: {
+                reportedId: reportedId,
+                reporterId: reporterId,
+                reason: reason || null
+            }
+        });
+
+        res.status(200).json({
+            message: "User reported successfully"
+        });
+
+    } catch (err) {
+        console.error("Error reporting user:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
 export async function getMe(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
