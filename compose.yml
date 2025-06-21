@@ -13,10 +13,11 @@ services:
     networks:
       - db
 
-  postegredb:
+  # Base de données PostgreSQL
+  postgredb:
     image: postgres:${POSTGRES_VERSION:-latest}
     restart: always
-    container_name: postegredb
+    container_name: postgredb
     ports:
       - 5432:5432
     volumes:
@@ -27,17 +28,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-app}
     networks:
       - db
-  postegredb2:
-    image: postgres:${POSTGRES_VERSION:-latest}
-    restart: always
-    ports:
-      - 5433:5432
-    environment:
-      POSTGRES_USER: test
-      POSTGRES_PASSWORD: example
-      POSTGRES_DB: app
-    networks:
-      - db
 
   adminer:
     image: michalhosna/adminer
@@ -46,18 +36,18 @@ services:
     ports:
       - 8081:8080
     depends_on:
-      - postegredb
+      - postgredb
       - mongodb
     networks:
       - db
     environment:
-      ADMINER_DEFAULT_SERVER: postegredb
+      ADMINER_DEFAULT_SERVER: postgredb
       ADMINER_DESIGN: nette
       ADMINER_DB: ${POSTGRES_DB:-app}
       ADMINER_DRIVER: pgsql
-      ADMINER_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
-      ADMINER_SERVER: postegredb
-      ADMINER_USERNAME: ${POSTGRES_USER:-app}
+      ADMINER_PASSWORD: ${POSTGRES_PASSWORD:-example}
+      ADMINER_SERVER: postgredb
+      ADMINER_USERNAME: ${POSTGRES_USER:-postgres}
       ADMINER_AUTOLOGIN: 1
       ADMINER_NAME: BreezySupport
 
@@ -77,6 +67,167 @@ services:
     networks:
       - db
 
+  # Microservices
+  api-posts:
+    image: api:latest
+    restart: always
+    container_name: api-posts
+    ports:
+      - "3001:3000"
+    depends_on:
+      - mongodb
+      - postgredb
+    environment:
+      - SERVICE=posts
+      - API_PORT=3000
+    networks:
+      - app
+      - db
+    env_file:
+      - .env
+    command: npm run start
+
+  api-users:
+    image: api:latest
+    restart: always
+    container_name: api-users
+    ports:
+      - "3007:3000"
+    depends_on:
+      - mongodb
+      - postgredb
+    environment:
+      - SERVICE=users
+      - API_PORT=3000
+    networks:
+      - app
+      - db
+    env_file:
+      - .env
+    command: npm run start
+
+  api-websocket:
+    image: api:latest
+    restart: always
+    container_name: api-websocket
+    ports:
+      - "3003:3000"
+    depends_on:
+      - mongodb
+      - postgredb
+    environment:
+      - SERVICE=chat
+      - API_PORT=3000
+    networks:
+      - app
+      - db
+    env_file:
+      - .env
+    command: npm run websocket
+
+  api-auth:
+    image: api:latest
+    restart: always
+    container_name: api-auth
+    ports:
+      - "3004:3000"
+    depends_on:
+      - mongodb
+      - postgredb
+    environment:
+      - SERVICE=auth
+      - API_PORT=3000
+    networks:
+      - app
+      - db
+    env_file:
+      - .env
+    command: npm run start
+
+  api-admin:
+    image: api:latest
+    restart: always
+    container_name: api-admin
+    ports:
+      - "3005:3000"
+    depends_on:
+      - mongodb
+      - postgredb
+    environment:
+      - SERVICE=admin
+      - API_PORT=3000
+    networks:
+      - app
+      - db
+    env_file:
+      - .env
+    command: npm run start
+
+  api-tags:
+    image: api:latest
+    restart: always
+    container_name: api-tags
+    ports:
+      - "3006:3000"
+    depends_on:
+      - mongodb
+      - postgredb
+    environment:
+      - SERVICE=tags
+      - API_PORT=3000
+    networks:
+      - app
+      - db
+    env_file:
+      - .env
+    command: npm run start
+
+  # Reverse Proxy Caddy
+  caddy:
+    image: caddy:latest
+    restart: always
+    container_name: caddy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "2019:2019"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api-posts
+      - api-users
+      - api-websocket
+      - api-auth
+      - api-admin
+      - api-tags
+      - minio
+    networks:
+      - app
+    labels:
+      caddy: breezy-api.panini.simon511000.fr
+      caddy.reverse_proxy: "{{upstreams 80}}"
+
+  minio:
+    image: minio/minio:latest
+    restart: always
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio123}
+      TZ: UTC
+    volumes:
+      - ./minio_storage:/data
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - app
+      - db
+
 networks:
   app:
   db:
@@ -85,3 +236,5 @@ volumes:
   mongodb:
   postegredb:
   matomo:
+  caddy_data:
+  caddy_config:

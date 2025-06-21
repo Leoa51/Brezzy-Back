@@ -2,8 +2,10 @@
 .env
 node_modules
 package-lock.json
-data/
+data/*
 
 /src/prisma
 
 /src/generated/prisma
+
+minio_storage/

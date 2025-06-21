@@ -49,4 +49,7 @@ userRouter.post('/block', blockUser);
 
 userRouter.post('/unblock', unblockUser);
 
+userRouter.put('/profile-picture', upload.single('profilePicture'), updateProfilePicture);
+
+
 export default userRouter;
