@@ -151,7 +151,7 @@ export async function uploadImage(req, res) {
                 size: req.file.size,
                 optimizedSize: optimizedBuffer.length,
                 uploadedAt: uploadDate,
-                uploadedBy: 'Leoa51',
+                uploadedBy: req.user.id,
                 thumbnails: thumbnailSizes
             },
             urls: generateImageUrls(uniquePath)

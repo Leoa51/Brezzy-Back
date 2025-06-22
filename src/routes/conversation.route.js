@@ -20,6 +20,6 @@ conversationRouter.patch('/:id', param('id').isUUID(), modifyConversation);
 
 conversationRouter.delete('/:id', param('id').isUUID(), deleteConversation);
 
-conversationRouter.post('/add-message/:id', param('id').isUUID(), addMessageToConversation);
+conversationRouter.post('/add-message/:id', param('id').isMongoId(), addMessageToConversation);
 
 export default conversationRouter;
