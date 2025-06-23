@@ -151,7 +151,7 @@ export async function uploadImage(req, res) {
                 size: req.file.size,
                 optimizedSize: optimizedBuffer.length,
                 uploadedAt: uploadDate,
-                uploadedBy: 'Leoa51',
+                uploadedBy: req.user.id,
                 thumbnails: thumbnailSizes
             },
             urls: generateImageUrls(uniquePath)
@@ -409,7 +409,7 @@ export async function clearCache(req, res) {
 }
 
 function generateImageUrls(imagePath) {
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3100';
+    const baseUrl = process.env.API_URI || 'http://localhost:3100';
 
     return {
         api: {
