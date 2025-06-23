@@ -18,7 +18,7 @@ conversationRouter.get('/:id', getConversationById);
 
 conversationRouter.patch('/:id', param('id').isUUID(), modifyConversation);
 
-conversationRouter.delete('/:id', param('id').isUUID(), deleteConversation);
+conversationRouter.delete('/:id', deleteConversation);
 
 conversationRouter.post('/add-message/:id', param('id').isUUID(), addMessageToConversation);
 

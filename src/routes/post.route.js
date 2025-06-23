@@ -4,7 +4,7 @@ const postRouter = express.Router();
 
 import {
   createPost, getAllPosts, getPostById, modifyPost, deletePost, getPostComments, likePost,
-  getAllPostFromFollowers, getIsLiked, getLikedPostsByUser, getReportedPost, reportPost
+  getAllPostFromFollowers, getIsLiked, getLikedPostsByUser, reportPost
 } from '../controllers/post.controller.js'
 import { body, param, query } from 'express-validator';
 
@@ -35,8 +35,6 @@ const upload = multer({
 postRouter.post('/', upload.single('image'), body('message').isString(), createPost);
 
 postRouter.get('/', getAllPosts);
-
-postRouter.get('/reported', getReportedPost)
 
 postRouter.post('/:postId/report', [
   param('postId').isString().notEmpty().withMessage('postId is required'),

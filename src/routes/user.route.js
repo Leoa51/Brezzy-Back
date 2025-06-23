@@ -4,10 +4,27 @@ const userRouter = express.Router();
 import { isCuid } from '@paralleldrive/cuid2';
 import {
     createUser, getAllUsers, getUserById, getUserByUsername, modifyUser, deleteUser,
-    toggleBlockUser, toggleFollowUser, getUserFollowers, getUserFollowing, getUserInfoById, getUserMessages, getMe, blockUser, unblockUser, getReportedUser, getIsFollowing, getBannedUser, reportUser
+    toggleBlockUser, toggleFollowUser, getUserFollowers, getUserFollowing, getUserInfoById, getUserMessages, getMe, blockUser, unblockUser, getReportedUser, getIsFollowing, getBannedUser, reportUser, updateProfilePicture
 } from '../controllers/user.controller.js'
 
 import { body, param } from 'express-validator';
+import multer from "multer";
+
+const storage = multer.memoryStorage();
+const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|gif|webp/;
+        const mimetype = allowedTypes.test(file.mimetype);
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        if (mimetype && extname) {
+            return cb(null, true);
+        } else {
+            cb(new Error('Unsupported file type'));
+        }
+    }
+});
 
 userRouter.get('/reportedUser', getReportedUser)
 
