@@ -7,3 +7,5 @@ data/*
 /src/prisma
 
 /src/generated/prisma
+
+minio_storage/
