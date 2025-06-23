@@ -51,6 +51,16 @@ export async function createPost(req, res) {
                         Authorization: `${req.headers.authorization}`
                     }
                 });
+                // console.log({
+                //     method: 'POST',
+                //     body: formData,
+                //     headers: {
+                //         'User-Agent': 'PostService/1.0',
+                //         Authorization: `Bearer ${req.headers.authorization}`
+                //     }
+                // });
+                // console.log(uploadResponse);
+
                 if (!uploadResponse.ok) {
                     const errorText = await uploadResponse.text();
                     throw new Error(`Image upload failed: ${uploadResponse.status} - ${errorText}`);
