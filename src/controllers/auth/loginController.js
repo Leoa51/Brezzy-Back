@@ -17,7 +17,10 @@ export default async function (req, res) {
         if (user && user.isBlocked) {
             return res.status(403).json({ message: 'User is banned' });
         }
-
+        // check if user verified his email
+        if (!user.validated) {
+            return res.status(403).json({ message: 'Please verify your email' });
+        }
         if (!user) return res.status(400).json({ message: 'Invalid credentials' });
 
         const isMatch = await bcrypt.compare(password, user.passwordHash);

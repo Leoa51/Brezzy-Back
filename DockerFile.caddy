@@ -1,0 +1,6 @@
+FROM caddy:latest
+
+# Copie du fichier de configuration
+COPY ./caddy/Caddyfile /etc/caddy/Caddyfile
+
+EXPOSE 80
