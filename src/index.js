@@ -5,7 +5,8 @@ import cors from 'cors'
 import authMiddleware from './middleware/authMiddleware.js';
 import { authRouter } from './routes/auth.route.js';
 import minioRouter from './routes/minio.route.js';
-import nodemailer from nodemailer
+import nodemailer from 'nodemailer'
+
 
 dotenv.config();
 
@@ -56,16 +57,6 @@ switch (process.env.SERVICE) {
     break;
 }
 
-
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: 587,
-  secure: false, // use false for STARTTLS; true for SSL on port 465
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
-  }
-});
 
 mongoose
   .connect(`mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_NAME}?authSource=admin`)

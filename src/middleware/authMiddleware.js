@@ -19,4 +19,5 @@ export default async function (req, res, next) {
     } catch (err) {
         res.status(400).json({ message: 'Invalid token', error: err.message });
     }
+    next()
 };

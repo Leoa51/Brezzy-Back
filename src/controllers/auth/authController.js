@@ -1,7 +1,11 @@
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+
 dotenv.config();
+
+
+
 const prisma = new PrismaClient();
 export const isAuthenticated = (req, res) => {
     const authHeader = req.header('Authorization');
@@ -20,36 +24,26 @@ export const isAuthenticated = (req, res) => {
 export async function verifyUser(req, res) {
     const { id } = req.params;
 
-    const user = await prisma.user_.findUnique(id);
+    console.log('[verifyUser] id reçu :', id);
     try {
-
+        const user = await prisma.user_.findUnique({ where: { id } });
+        console.log('[verifyUser] user trouvé :', user);
 
         if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
-        if (user.isValidated) {
-            return res.status(200).json({
-                success: true,
-                message: 'User is already verified'
-            });
+        if (user.validated) {
+            return res.status(200).json({ success: true, message: 'User is already verified' });
         }
-        prisma.user_.update({
-            where: { id: parseInt(id) },
-            data: {
-                isValidated: true
-            }
-        })
 
-        res.redirect(302, process.env.APP_URL);
-    }
-    catch (error) {
-        console.error('Email verification error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Internal server error'
+        await prisma.user_.update({
+            where: { id },
+            data: { validated: true },
         });
+        return res.redirect(302, process.env.APP_URL);
+    } catch (error) {
+        console.error('[verifyUser] error :', error);
+        return res.status(500).json({ success: false, message: 'Internal server error' });
     }
 }
+
