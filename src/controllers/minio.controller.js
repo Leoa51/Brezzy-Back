@@ -15,7 +15,6 @@ const minioClient = new MinioClient({
 const IMAGES_BUCKET = process.env.MINIO_IMAGES_BUCKET || 'images';
 const THUMBNAILS_BUCKET = process.env.MINIO_THUMBNAILS_BUCKET || 'thumbnails';
 const CACHE_BUCKET = process.env.MINIO_CACHE_BUCKET || 'cache';
-const API_URI = process.env.API_URI || 'http://localhost:3100';
 
 function sanitizeFilename(filename) {
     if (!filename) return 'unknown';
@@ -65,6 +64,7 @@ async function initializeBuckets() {
 
 initializeBuckets();
 
+// Generate unique path with date structure: YYYY/MM/DD/timestamp_hash_sanitizedname
 function generateUniqueImagePath(originalFilename) {
     const now = new Date();
     const year = now.getUTCFullYear();
@@ -87,6 +87,7 @@ export async function uploadImage(req, res) {
             });
         }
 
+        // Critical: Verify MinIO connection before processing upload
         try {
             await minioClient.listBuckets();
         } catch (connError) {
@@ -98,38 +99,23 @@ export async function uploadImage(req, res) {
         }
 
         const originalFilename = req.file.originalname;
-        const fileExtension = originalFilename.split('.').pop().toLowerCase();
         const uniquePath = generateUniqueImagePath(originalFilename);
         const hash = crypto.createHash('sha256').update(req.file.buffer).digest('hex');
 
-        let outputFormat = 'jpeg';
-        let contentType = 'image/jpeg';
-        let extension = 'jpg';
-
-        if (['png', 'webp', 'gif'].includes(fileExtension)) {
-            outputFormat = fileExtension;
-            contentType = `image/${fileExtension}`;
-            extension = fileExtension;
-        }
-
         const optimizedBuffer = await sharp(req.file.buffer)
             .resize(2048, 2048, { fit: 'inside', withoutEnlargement: true })
-            [outputFormat]({ quality: 85 })
+            .jpeg({ quality: 85, progressive: true })
             .toBuffer();
 
         const uploadDate = new Date().toISOString();
-        const fullObjectKey = `${uniquePath}.${extension}`;
-
-        // Store only the relative path in the database
-        const relativeUrlPath = `/api/media/${uniquePath}.${extension}`;
 
         await minioClient.putObject(
             IMAGES_BUCKET,
-            fullObjectKey,
+            `${uniquePath}.jpg`,
             optimizedBuffer,
             optimizedBuffer.length,
             {
-                'Content-Type': contentType,
+                'Content-Type': 'image/jpeg',
                 'Cache-Control': 'public, max-age=31536000'
             }
         );
@@ -159,18 +145,16 @@ export async function uploadImage(req, res) {
             success: true,
             message: 'Image uploaded successfully',
             data: {
-                path: relativeUrlPath,
-                cdnPath: relativeUrlPath,
-                extension: extension,
+                path: uniquePath,
                 hash: hash,
                 originalName: originalFilename,
                 size: req.file.size,
                 optimizedSize: optimizedBuffer.length,
                 uploadedAt: uploadDate,
                 uploadedBy: req.user.id,
-                thumbnails: thumbnailSizes.map(size => `/api/media/${uniquePath}.${extension}?size=${size}`)
+                thumbnails: thumbnailSizes
             },
-            urls: generateImageUrls(uniquePath, extension)
+            urls: generateImageUrls(uniquePath)
         });
 
     } catch (error) {
@@ -185,53 +169,29 @@ export async function uploadImage(req, res) {
 
 export async function getImage(req, res) {
     try {
-        const { year, month, day, filename } = req.params;
+        const imagePath = req.params[0];
         const { size } = req.query;
 
-        if (!year || !month || !day || !filename) {
+        if (!imagePath) {
             return res.status(400).json({ error: 'Image path is required' });
         }
 
-        const filenameParts = filename.split('.');
-        const fileExtension = filenameParts.length > 1 ? filenameParts.pop().toLowerCase() : 'jpg';
-        const filenameBase = filenameParts.join('.');
-
-        const pathWithoutExt = `${year}/${month}/${day}/${filenameBase}`;
-        const fullPath = `${pathWithoutExt}.${fileExtension}`;
-
-        const mimeTypeMap = {
-            'jpg': 'image/jpeg',
-            'jpeg': 'image/jpeg',
-            'png': 'image/png',
-            'gif': 'image/gif',
-            'webp': 'image/webp'
-        };
-        const mimeType = mimeTypeMap[fileExtension] || 'application/octet-stream';
-
         let bucket = IMAGES_BUCKET;
-        let key = fullPath;
+        let key = `${imagePath}.jpg`;
 
         if (size && ['150', '300', '600'].includes(size)) {
             bucket = THUMBNAILS_BUCKET;
-            key = `${pathWithoutExt}_${size}.jpg`;
+            key = `${imagePath}_${size}.jpg`;
         }
 
         try {
             const imageStream = await minioClient.getObject(bucket, key);
 
-            res.set('Content-Type', mimeType);
+            res.set('Content-Type', 'image/jpeg');
             res.set('Cache-Control', 'public, max-age=31536000');
 
             imageStream.pipe(res);
-
-            imageStream.on('error', (err) => {
-                console.error(`Stream error for ${bucket}/${key}:`, err.message);
-                if (!res.headersSent) {
-                    res.status(500).json({ error: 'Failed to stream image' });
-                }
-            });
-        } catch (err) {
-            console.error(`Image not found: ${bucket}/${key}`);
+        } catch {
             res.status(404).json({ error: 'Image not found' });
         }
 
@@ -251,26 +211,20 @@ export async function resizeImage(req, res) {
     }
 
     try {
-        const { width, height, year, month, day, filename } = req.params;
+        const { width, height } = req.params;
+        const imagePath = req.params[0];
 
-        if (!year || !month || !day || !filename) {
+        if (!imagePath) {
             return res.status(400).json({ error: 'Image path is required' });
         }
 
-        const filenameParts = filename.split('.');
-        const fileExtension = filenameParts.length > 1 ? filenameParts.pop().toLowerCase() : 'jpg';
-        const filenameBase = filenameParts.join('.');
-
-        const pathWithoutExt = `${year}/${month}/${day}/${filenameBase}`;
-        const fullPath = `${pathWithoutExt}.${fileExtension}`;
-
         try {
-            await minioClient.statObject(IMAGES_BUCKET, fullPath);
+            await minioClient.statObject(IMAGES_BUCKET, `${imagePath}.jpg`);
         } catch {
             return res.status(404).json({ error: 'Image not found' });
         }
 
-        const cacheKey = `${pathWithoutExt}_${width}x${height}.jpg`;
+        const cacheKey = `${imagePath}_${width}x${height}.jpg`;
 
         try {
             const cachedImageStream = await minioClient.getObject(CACHE_BUCKET, cacheKey);
@@ -282,7 +236,7 @@ export async function resizeImage(req, res) {
             cachedImageStream.pipe(res);
             return;
         } catch {
-            const originalImageStream = await minioClient.getObject(IMAGES_BUCKET, fullPath);
+            const originalImageStream = await minioClient.getObject(IMAGES_BUCKET, `${imagePath}.jpg`);
 
             const chunks = [];
             for await (const chunk of originalImageStream) {
@@ -323,24 +277,17 @@ export async function resizeImage(req, res) {
 
 export async function deleteImage(req, res) {
     try {
-        const { year, month, day, filename } = req.params;
+        const imagePath = req.params[0];
 
-        if (!year || !month || !day || !filename) {
+        if (!imagePath) {
             return res.status(400).json({ error: 'Image path is required' });
         }
 
-        const filenameParts = filename.split('.');
-        const fileExtension = filenameParts.length > 1 ? filenameParts.pop().toLowerCase() : 'jpg';
-        const filenameBase = filenameParts.join('.');
-
-        const pathWithoutExt = `${year}/${month}/${day}/${filenameBase}`;
-        const fullPath = `${pathWithoutExt}.${fileExtension}`;
-
         const objectsToDelete = [
-            { bucket: IMAGES_BUCKET, key: fullPath },
-            { bucket: THUMBNAILS_BUCKET, key: `${pathWithoutExt}_150.jpg` },
-            { bucket: THUMBNAILS_BUCKET, key: `${pathWithoutExt}_300.jpg` },
-            { bucket: THUMBNAILS_BUCKET, key: `${pathWithoutExt}_600.jpg` }
+            { bucket: IMAGES_BUCKET, key: `${imagePath}.jpg` },
+            { bucket: THUMBNAILS_BUCKET, key: `${imagePath}_150.jpg` },
+            { bucket: THUMBNAILS_BUCKET, key: `${imagePath}_300.jpg` },
+            { bucket: THUMBNAILS_BUCKET, key: `${imagePath}_600.jpg` }
         ];
 
         let deletedCount = 0;
@@ -349,13 +296,13 @@ export async function deleteImage(req, res) {
                 await minioClient.removeObject(obj.bucket, obj.key);
                 deletedCount++;
             } catch {
-                // Object may not exist
+                // Object doesn't exist, continue deletion process
             }
         }
 
         try {
             const cacheObjects = [];
-            const stream = minioClient.listObjects(CACHE_BUCKET, pathWithoutExt, true);
+            const stream = minioClient.listObjects(CACHE_BUCKET, imagePath, true);
 
             for await (const obj of stream) {
                 cacheObjects.push(obj.name);
@@ -366,7 +313,7 @@ export async function deleteImage(req, res) {
                 deletedCount += cacheObjects.length;
             }
         } catch {
-            // Cache cleanup failed but primary deletion may have succeeded
+            // Cache cleanup failed, but main deletion may have succeeded
         }
 
         if (deletedCount === 0) {
@@ -376,7 +323,7 @@ export async function deleteImage(req, res) {
         res.status(200).json({
             success: true,
             message: 'Image deleted successfully',
-            path: pathWithoutExt,
+            path: imagePath,
             deletedObjects: deletedCount
         });
 
@@ -398,19 +345,13 @@ export async function getAllImages(req, res) {
         const stream = minioClient.listObjects(IMAGES_BUCKET, '', true);
 
         for await (const obj of stream) {
-            if (obj.name.endsWith('.jpg') || obj.name.endsWith('.png') ||
-                obj.name.endsWith('.gif') || obj.name.endsWith('.webp')) {
-                const extension = obj.name.split('.').pop().toLowerCase();
-                const imagePath = obj.name.substring(0, obj.name.length - extension.length - 1);
-                const relativeUrlPath = `/api/media/${imagePath}.${extension}`;
-
+            if (obj.name.endsWith('.jpg')) {
+                const imagePath = obj.name.replace('.jpg', '');
                 images.push({
                     path: imagePath,
-                    fullPath: relativeUrlPath,
-                    extension: extension,
                     size: obj.size,
                     lastModified: obj.lastModified,
-                    urls: generateImageUrls(imagePath, extension)
+                    urls: generateImageUrls(imagePath)
                 });
             }
         }
@@ -467,19 +408,19 @@ export async function clearCache(req, res) {
     }
 }
 
-function generateImageUrls(imagePath, extension = 'jpg') {
+function generateImageUrls(imagePath) {
     const baseUrl = process.env.API_URI || 'http://localhost:3100';
 
     return {
         api: {
-            original: `/api/media/${imagePath}.${extension}`,
-            thumbnail_150: `/api/media/${imagePath}.${extension}?size=150`,
-            thumbnail_300: `/api/media/${imagePath}.${extension}?size=300`,
-            thumbnail_600: `/api/media/${imagePath}.${extension}?size=600`,
-            resize: `/api/media/resize/{width}/{height}/${imagePath}.${extension}`
+            original: `${baseUrl}/api/images/${imagePath}`,
+            thumbnail_150: `${baseUrl}/api/images/${imagePath}?size=150`,
+            thumbnail_300: `${baseUrl}/api/images/${imagePath}?size=300`,
+            thumbnail_600: `${baseUrl}/api/images/${imagePath}?size=600`,
+            resize: `${baseUrl}/api/images/resize/{width}/{height}/${imagePath}`
         },
         direct: {
-            original: `http://${process.env.MINIO_ENDPOINT || 'localhost'}:${process.env.MINIO_PORT || 9000}/${IMAGES_BUCKET}/${imagePath}.${extension}`,
+            original: `http://${process.env.MINIO_ENDPOINT || 'localhost'}:${process.env.MINIO_PORT || 9000}/${IMAGES_BUCKET}/${imagePath}.jpg`,
             thumbnail_150: `http://${process.env.MINIO_ENDPOINT || 'localhost'}:${process.env.MINIO_PORT || 9000}/${THUMBNAILS_BUCKET}/${imagePath}_150.jpg`,
             thumbnail_300: `http://${process.env.MINIO_ENDPOINT || 'localhost'}:${process.env.MINIO_PORT || 9000}/${THUMBNAILS_BUCKET}/${imagePath}_300.jpg`,
             thumbnail_600: `http://${process.env.MINIO_ENDPOINT || 'localhost'}:${process.env.MINIO_PORT || 9000}/${THUMBNAILS_BUCKET}/${imagePath}_600.jpg`
