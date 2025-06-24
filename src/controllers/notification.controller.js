@@ -6,6 +6,7 @@ webpush.setVapidDetails(
     process.env.VAPID_PRIVATE_KEY
 );
 
+// Store user subscriptions in memory (use database in production)
 const userSubscriptions = new Map();
 
 export async function subscribe(req, res) {

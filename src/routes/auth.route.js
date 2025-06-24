@@ -3,7 +3,6 @@ import { body } from 'express-validator';
 import register from '../controllers/auth/registerController.js';
 import login from '../controllers/auth/loginController.js';
 import {isAuthenticated} from "../controllers/auth/authController.js";
-
 export const authRouter = express.Router();
 
 authRouter.post('/register',

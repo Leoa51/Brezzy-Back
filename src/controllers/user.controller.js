@@ -2,6 +2,63 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { validationResult } from 'express-validator';
 const prisma = new PrismaClient();
+export async function getBannedUser(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(422).json({ errors: errors.array() });
+    }
+    try {
+        const reportedUsers = await prisma.user_.findMany({
+            where: {
+                isBlocked: true
+            },
+            select: {
+                id: true,
+                firstName: true,
+                name: true,
+                email: true,
+                username: true,
+                createdAt: true,
+                isBlocked: true
+            }
+        });
+
+        res.status(200).json(reportedUsers);
+    } catch (error) {
+        console.error("Erreur lors de la récupération des utilisateurs signalés :", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+}
+export async function getReportedUser(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(422).json({ errors: errors.array() });
+    }
+    try {
+        const reportedUsers = await prisma.user_.findMany({
+            where: {
+                userReports: {
+                    some: {}
+                },
+                isBlocked: false
+            },
+            select: {
+                id: true,
+                firstName: true,
+                name: true,
+                email: true,
+                username: true,
+                createdAt: true,
+                isBlocked: true
+            }
+        });
+
+        res.status(200).json(reportedUsers);
+    } catch (error) {
+        console.error("Erreur lors de la récupération des utilisateurs signalés :", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+}
 
 export async function createUser(req, res) {
     const errors = validationResult(req);
@@ -280,7 +337,7 @@ export async function getUserByUsername(req, res) {
                         _count: {
                             select: {
                                 likes: true,
-                                comments: true
+                                commentsOnThis: true
                             }
                         }
                     },
@@ -918,6 +975,89 @@ export async function unblockUser(req, res) {
         });
     }
 }
+
+export async function reportUser(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(422).json({ errors: errors.array() });
+    }
+
+    const { reason } = req.body;
+    const reporterId = req.user.id;
+    const reportedId = req.params.id;
+
+    if (!reportedId || !reporterId) {
+        return res.status(400).json({
+            error: "reportedId and reporterId are required"
+        });
+    }
+
+    if (reportedId === reporterId) {
+        return res.status(400).json({
+            error: "Cannot report yourself"
+        });
+    }
+
+    try {
+        // Vérifier que l'utilisateur à signaler existe
+        const reportedUser = await prisma.user_.findUnique({
+            where: { id: reportedId }
+        });
+
+        if (!reportedUser) {
+            return res.status(404).json({
+                error: "Reported user not found"
+            });
+        }
+
+        const reporterUser = await prisma.user_.findUnique({
+            where: { id: reporterId }
+        });
+
+        if (!reporterUser) {
+            return res.status(404).json({
+                error: "Reporter user not found"
+            });
+        }
+
+        // Vérifier si un signalement existe déjà
+        const existingReport = await prisma.reportUser.findUnique({
+            where: {
+                reportedId_reporterId: {
+                    reportedId: reportedId,
+                    reporterId: reporterId
+                }
+            }
+        });
+
+        if (existingReport) {
+            return res.status(200).json({
+                message: "User already reported"
+            });
+        }
+
+        // Créer le nouveau signalement
+        await prisma.reportUser.create({
+            data: {
+                reportedId: reportedId,
+                reporterId: reporterId,
+                reason: reason || null
+            }
+        });
+
+        res.status(200).json({
+            message: "User reported successfully"
+        });
+
+    } catch (err) {
+        console.error("Error reporting user:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
 export async function getMe(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -939,7 +1079,9 @@ export async function getMe(req, res) {
                 validated: true,
                 isBlocked: true,
                 createdAt: true,
-                updatedAt: true
+                updatedAt: true,
+                role: true
+
             }
         });
 

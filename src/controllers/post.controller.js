@@ -2,15 +2,15 @@ import { PrismaClient } from '@prisma/client';
 import { validationResult } from 'express-validator';
 const prisma = new PrismaClient();
 
+
 export async function createPost(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const { message, originalPostId, parentCommentId } = req.body;
+    const { message, originalPostId, parentCommentId, tags, image } = req.body;
     const author = req.user.id;
-
     if (!message || !author) {
         return res.status(400).json({
             error: "Message and author are required"
@@ -24,17 +24,31 @@ export async function createPost(req, res) {
                 author
             },
             include: {
-                user: {
-                    select: {
-                        id: true,
-                        username: true,
-                        name: true,
-                        ppPath: true
-                    }
-                }
+                user: { select: { id: true, username: true, name: true, ppPath: true } }
             }
         });
 
+
+
+        if (tags && Array.isArray(tags)) {
+            for (const tagName of tags) {
+                const cleanName = tagName.replace(/^#/, '').trim().toLowerCase();
+                if (!cleanName) continue;
+                let tag = await prisma.tag.findFirst({ where: { name: cleanName } });
+                if (!tag) {
+                    tag = await prisma.tag.create({ data: { name: cleanName, idTag: cleanName } });
+                }
+                await prisma.asso11.upsert({
+                    where: { idTag_idPost: { idTag: tag.idTag, idPost: newPost.id } },
+                    update: {},
+                    create: {
+                        idTag: tag.idTag,
+                        idPost: newPost.id,
+                        author: req.user.id,
+                    }
+                });
+            }
+        }
         let uploadedImage = null;
 
         if (req.file) {
@@ -95,37 +109,25 @@ export async function createPost(req, res) {
         }
 
         if (originalPostId) {
-            const originalPost = await prisma.post.findUnique({
-                where: { id: originalPostId }
-            });
+            const originalPost = await prisma.post.findUnique({ where: { id: originalPostId } });
 
             if (!originalPost) {
                 if (uploadedImage) {
-                    await prisma.image.deleteMany({
-                        where: { cdnPath: uploadedImage }
-                    });
+                    await prisma.image.deleteMany({ where: { cdnPath: uploadedImage } });
                 }
                 await prisma.post.delete({ where: { id: newPost.id } });
-                return res.status(404).json({
-                    error: "Original post not found"
-                });
+                return res.status(404).json({ error: "Original post not found" });
             }
 
             if (parentCommentId) {
-                const parentComment = await prisma.commentPost.findUnique({
-                    where: { id: parentCommentId }
-                });
+                const parentComment = await prisma.commentPost.findUnique({ where: { id: parentCommentId } });
 
                 if (!parentComment || parentComment.postId !== originalPostId) {
                     if (uploadedImage) {
-                        await prisma.image.deleteMany({
-                            where: { cdnPath: uploadedImage }
-                        });
+                        await prisma.image.deleteMany({ where: { cdnPath: uploadedImage } });
                     }
                     await prisma.post.delete({ where: { id: newPost.id } });
-                    return res.status(400).json({
-                        error: "Invalid parent comment"
-                    });
+                    return res.status(400).json({ error: "Invalid parent comment" });
                 }
             }
 
@@ -160,15 +162,6 @@ export async function createPost(req, res) {
         });
     }
 }
-
-
-
-
-
-
-
-
-
 export async function getAllPostFromFollowers(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -226,7 +219,6 @@ export async function getAllPostFromFollowers(req, res) {
         });
     }
 }
-
 export async function getAllPosts(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -234,14 +226,21 @@ export async function getAllPosts(req, res) {
     }
 
     try {
-        const { page = 1, limit = 20 } = req.query;
+        const { page = 1, limit = 20, keyword } = req.query;
         const skip = (page - 1) * limit;
 
-        // Récupération des posts avec pagination
+        const where = { thisIsComment: null };
+        if (keyword) {
+            where.OR = [
+                { message: { contains: keyword, mode: 'insensitive' } },
+                { user: { username: { contains: keyword, mode: 'insensitive' } } },
+                { user: { name: { contains: keyword, mode: 'insensitive' } } },
+                { tags: { some: { tag: { name: { contains: keyword, mode: 'insensitive' } } } } }
+            ];
+        }
+
         const posts = await prisma.post.findMany({
-            where: {
-                thisIsComment: null
-            },
+            where,
             include: {
                 user: {
                     select: {
@@ -256,24 +255,27 @@ export async function getAllPosts(req, res) {
                         commentsOnThis: true,
                         likes: true
                     }
+                },
+                linkImages: {
+                    include: {
+                        image: true
+                    }
+                },
+                linkVideos: {
+                    include: {
+                        video: true
+                    }
                 }
             },
-            orderBy: {
-                createdAt: 'desc'
-            },
+            orderBy: { createdAt: 'desc' },
             skip: parseInt(skip),
             take: parseInt(limit)
         });
 
-        const totalPosts = await prisma.post.count({
-            where: {
-                thisIsComment: null
-            }
-        });
+        const totalPosts = await prisma.post.count({ where });
 
         const totalPages = Math.ceil(totalPosts / parseInt(limit));
         const currentPage = parseInt(page);
-
 
         res.status(200).json({
             posts,
@@ -286,13 +288,9 @@ export async function getAllPosts(req, res) {
                 hasPrevious: currentPage > 1
             }
         });
-
     } catch (err) {
-        console.error("Error fetching posts:", err);
-        res.status(500).json({
-            error: "Internal server error",
-            details: err.message
-        });
+        console.error('Error fetching posts:', err);
+        res.status(500).json({ error: 'Internal server error', details: err.message });
     }
 }
 
@@ -352,7 +350,6 @@ export async function getPostById(req, res) {
         });
     }
 }
-
 export async function getPostComments(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -682,6 +679,61 @@ export async function getIsLiked(req, res) {
         res.status(500).json({
             error: "Internal server error",
             details: err.message
+        });
+    }
+}
+
+export async function getReportedPost(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+    try {
+        const reportedPosts = await prisma.post.findMany({
+            where: {
+                reports: {
+                    some: {}
+                }
+            },
+            select: {
+                id: true,
+                author: true,
+                message: true,
+                createdAt: true,
+                updatedAt: true,
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        name: true,
+                        username: true,
+                        email: true,
+                        role: true,
+                        isBlocked: true
+                    }
+                },
+                _count: {
+                    select: {
+                        reports: true,
+                        likes: true
+                    }
+                },
+
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        return res.status(200).json(
+            reportedPosts,
+        );
+
+    } catch (error) {
+        console.error('Erreur lors de la récupération des posts signalés:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Erreur interne du serveur'
         });
     }
 }
