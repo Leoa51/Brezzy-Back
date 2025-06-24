@@ -229,12 +229,16 @@ export async function getAllPosts(req, res) {
         const { page = 1, limit = 20, keyword } = req.query;
         const skip = (page - 1) * limit;
 
-        const where = { thisIsComment: null };
+        const where =
+            {
+                thisIsComment: null,
+                user: {isBlocked: false},
+        };
         if (keyword) {
             where.OR = [
                 { message: { contains: keyword, mode: 'insensitive' } },
                 { user: { username: { contains: keyword, mode: 'insensitive' } } },
-                { user: { name: { contains: keyword, mode: 'insensitive' } } },
+                { user: { name: { contains: keyword, mode: 'insensitive' }, isBlocked: false } },
                 { tags: { some: { tag: { name: { contains: keyword, mode: 'insensitive' } } } } }
             ];
         }
@@ -350,6 +354,7 @@ export async function getPostById(req, res) {
         });
     }
 }
+
 export async function getPostComments(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -360,6 +365,9 @@ export async function getPostComments(req, res) {
         const { postId } = req.params;
         const { page = 1, limit = 20 } = req.query;
         const skip = (page - 1) * limit;
+
+        // ✅ AJOUT: Récupérer l'utilisateur actuel pour vérifier les likes
+        const currentUserId = req.user?.id;
 
         const comments = await prisma.commentPost.findMany({
             where: {
@@ -376,7 +384,20 @@ export async function getPostComments(req, res) {
                                 name: true,
                                 ppPath: true
                             }
-                        }
+                        },
+                        // ✅ AJOUT: Inclure les compteurs et les likes
+                        _count: {
+                            select: {
+                                commentsOnThis: true,
+                                likes: true
+                            }
+                        },
+                        // ✅ AJOUT: Récupérer les likes pour vérifier si l'utilisateur a liké
+                        likes: currentUserId ? {
+                            where: {
+                                author: currentUserId
+                            }
+                        } : false
                     }
                 },
                 replies: {
@@ -390,26 +411,18 @@ export async function getPostComments(req, res) {
                                         name: true,
                                         ppPath: true
                                     }
-                                }
-                            }
-                        },
-                        replies: {
-                            include: {
-                                commentPost: {
-                                    include: {
-                                        user: {
-                                            select: {
-                                                id: true,
-                                                username: true,
-                                                name: true,
-                                                ppPath: true
-                                            }
-                                        }
+                                },
+                                _count: {
+                                    select: {
+                                        commentsOnThis: true,
+                                        likes: true
                                     }
-                                }
-                            },
-                            orderBy: {
-                                createdAt: 'asc'
+                                },
+                                likes: currentUserId ? {
+                                    where: {
+                                        author: currentUserId
+                                    }
+                                } : false
                             }
                         }
                     },
@@ -425,6 +438,16 @@ export async function getPostComments(req, res) {
             take: parseInt(limit)
         });
 
+        // ✅ AJOUT: Transformer les données pour ajouter isLiked
+        const transformedComments = comments.map(comment => ({
+            ...comment,
+            commentPost: {
+                ...comment.commentPost,
+                isLiked: comment.commentPost.likes && comment.commentPost.likes.length > 0,
+                likes: undefined // Nettoyer pour éviter d'envoyer toutes les données
+            }
+        }));
+
         const totalComments = await prisma.commentPost.count({
             where: {
                 postId: postId,
@@ -433,7 +456,7 @@ export async function getPostComments(req, res) {
         });
 
         res.status(200).json({
-            comments,
+            comments: transformedComments,
             pagination: {
                 currentPage: parseInt(page),
                 totalPages: Math.ceil(totalComments / limit),
