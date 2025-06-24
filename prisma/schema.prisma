@@ -21,6 +21,7 @@ model User_ {
   isBlocked    Boolean        @default(false) @map("is_blocked")
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
+  isValidated  Boolean        @default(false)
   tagAssocs    Asso11[]
   followers    Follow[]       @relation("FollowedUser")
   following    Follow[]       @relation("FollowerUser")
