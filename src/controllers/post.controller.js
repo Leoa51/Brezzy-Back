@@ -366,7 +366,6 @@ export async function getPostComments(req, res) {
         const { page = 1, limit = 20 } = req.query;
         const skip = (page - 1) * limit;
 
-        // ✅ AJOUT: Récupérer l'utilisateur actuel pour vérifier les likes
         const currentUserId = req.user?.id;
 
         const comments = await prisma.commentPost.findMany({
@@ -385,14 +384,12 @@ export async function getPostComments(req, res) {
                                 ppPath: true
                             }
                         },
-                        // ✅ AJOUT: Inclure les compteurs et les likes
                         _count: {
                             select: {
                                 commentsOnThis: true,
                                 likes: true
                             }
                         },
-                        // ✅ AJOUT: Récupérer les likes pour vérifier si l'utilisateur a liké
                         likes: currentUserId ? {
                             where: {
                                 author: currentUserId
@@ -438,7 +435,6 @@ export async function getPostComments(req, res) {
             take: parseInt(limit)
         });
 
-        // ✅ AJOUT: Transformer les données pour ajouter isLiked
         const transformedComments = comments.map(comment => ({
             ...comment,
             commentPost: {
