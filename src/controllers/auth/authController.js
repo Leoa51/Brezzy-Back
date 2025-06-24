@@ -40,7 +40,7 @@ export async function verifyUser(req, res) {
             where: { id },
             data: { validated: true },
         });
-        return res.redirect(302, process.env.APP_URL);
+        return res.redirect(302, 'https://google.com');
     } catch (error) {
         console.error('[verifyUser] error :', error);
         return res.status(500).json({ success: false, message: 'Internal server error' });
