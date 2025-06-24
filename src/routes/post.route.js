@@ -4,9 +4,9 @@ const postRouter = express.Router();
 
 import {
   createPost, getAllPosts, getPostById, modifyPost, deletePost, getPostComments, likePost,
-  getAllPostFromFollowers, getIsLiked, getLikedPostsByUser
+  getAllPostFromFollowers, getIsLiked, getLikedPostsByUser, reportPost, getReportedPost
 } from '../controllers/post.controller.js'
-import { body, param } from 'express-validator';
+import { body, param, query } from 'express-validator';
 
 import { isCuid } from '@paralleldrive/cuid2';
 import multer from "multer";
@@ -35,6 +35,14 @@ const upload = multer({
 postRouter.post('/', upload.single('image'), body('message').isString(), createPost);
 
 postRouter.get('/', getAllPosts);
+
+postRouter.get('/reported', getReportedPost)
+
+postRouter.post('/:postId/report', [
+  param('postId').isString().notEmpty().withMessage('postId is required'),
+  body('reason').optional().isString().withMessage('Reason must be a string')
+], reportPost);
+
 
 postRouter.get('/followers', getAllPostFromFollowers)
 

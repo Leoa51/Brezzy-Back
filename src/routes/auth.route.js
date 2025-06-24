@@ -2,8 +2,8 @@ import express from 'express';
 import { body } from 'express-validator';
 import register from '../controllers/auth/registerController.js';
 import login from '../controllers/auth/loginController.js';
-import { verifyUser } from '../controllers/auth/authController.js';
 import { isAuthenticated } from "../controllers/auth/authController.js";
+import { verifyUser } from '../controllers/auth/authController.js';
 
 export const authRouter = express.Router();
 
@@ -26,4 +26,3 @@ authRouter.post('/login',
 
 authRouter.get('/verify-user/:id', verifyUser)
 authRouter.get('/isauthenticated', isAuthenticated);
-

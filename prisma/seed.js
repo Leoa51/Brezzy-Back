@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 faker.locale = 'fr';
 
 async function main() {
-    console.log(' Début du seeding...');
+    console.log('Début du seeding...');
 
     console.log('Nettoyage de la base de données...');
     await prisma.linkVid.deleteMany();
@@ -126,7 +126,7 @@ async function main() {
         posts.push(post);
 
         if ((i + 1) % 1000 === 0) {
-            console.log(`  📝 ${i + 1}/10000 posts créés`);
+            console.log(`${i + 1}/10000 posts créés`);
         }
     }
 
@@ -151,7 +151,7 @@ async function main() {
         }
 
         if ((i + 1) % 1000 === 0) {
-            console.log(`  🔗 ${i + 1}/10000 associations créées`);
+            console.log(`${i + 1}/10000 associations créées`);
         }
     }
 
@@ -193,7 +193,7 @@ async function main() {
         }
     }
 
-    console.log('💬 Création des commentaires...');
+    console.log('Création des commentaires...');
     const commentsCount = Math.floor(posts.length * 0.1);
 
     for (let i = 0; i < commentsCount; i++) {
@@ -216,11 +216,80 @@ async function main() {
         });
     }
 
-    console.log('Seeding terminé!');
+    console.log('Création des signalements de posts...');
+    const reportPostReasons = [
+        'Contenu inapproprié',
+        'Spam',
+        'Harcèlement',
+        'Contenu violent',
+        'Fausses informations',
+        'Contenu sexuel',
+        'Violation des droits',
+        'Discours de haine',
+        'Contenu trompeur',
+        'Autre'
+    ];
+
+    const reportPostCount = Math.floor(posts.length * 0.02);
+
+    for (let i = 0; i < reportPostCount; i++) {
+        const post = faker.helpers.arrayElement(posts);
+        const reporter = faker.helpers.arrayElement(users);
+
+        if (reporter.id !== post.author) {
+            try {
+                await prisma.reportPost.create({
+                    data: {
+                        idPost: post.id,
+                        author: reporter.id,
+                        reason: faker.helpers.arrayElement(reportPostReasons),
+                    },
+                });
+            } catch (error) {
+            }
+        }
+    }
+
+    console.log('Création des signalements d\'utilisateurs...');
+    const reportUserReasons = [
+        'Comportement inapproprié',
+        'Harcèlement',
+        'Usurpation d\'identité',
+        'Compte spam',
+        'Contenu offensant',
+        'Violation des conditions',
+        'Compte suspect',
+        'Menaces',
+        'Activité suspecte',
+        'Autre'
+    ];
+
+    const reportUserCount = Math.floor(users.length * 0.05);
+
+    for (let i = 0; i < reportUserCount; i++) {
+        const reporter = faker.helpers.arrayElement(users);
+        const reported = faker.helpers.arrayElement(users);
+
+        if (reporter.id !== reported.id) {
+            try {
+                await prisma.reportUser.create({
+                    data: {
+                        reporterId: reporter.id,
+                        reportedId: reported.id,
+                        reason: faker.helpers.arrayElement(reportUserReasons),
+                    },
+                });
+            } catch (error) {
+            }
+        }
+    }
+
+    console.log('Seeding terminé');
 }
+
 main()
     .catch((e) => {
-        console.error('❌ Erreur lors du seeding:', e);
+        console.error('Erreur lors du seeding:', e);
         process.exit(1);
     })
     .finally(async () => {
