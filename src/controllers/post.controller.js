@@ -201,6 +201,11 @@ export async function getAllPostFromFollowers(req, res) {
                         commentsOnThis: true,
                         likes: true
                     }
+                },
+                likes: {
+                    where: {
+                        author: userId
+                    }
                 }
             },
             orderBy: {
@@ -210,7 +215,13 @@ export async function getAllPostFromFollowers(req, res) {
             take: parseInt(limit)
         });
 
-        res.status(200).json(posts);
+        const transformedPosts = posts.map(post => ({
+            ...post,
+            isLiked: post.likes && post.likes.length > 0,
+            likes: undefined
+        }));
+
+        res.status(200).json(transformedPosts);
     } catch (err) {
         console.error("Error fetching posts from followers:", err);
         res.status(500).json({
@@ -219,6 +230,7 @@ export async function getAllPostFromFollowers(req, res) {
         });
     }
 }
+
 export async function getAllPosts(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -229,11 +241,13 @@ export async function getAllPosts(req, res) {
         const { page = 1, limit = 20, keyword } = req.query;
         const skip = (page - 1) * limit;
 
-        const where =
-            {
-                thisIsComment: null,
-                user: {isBlocked: false},
+        const currentUserId = req.user?.id;
+
+        const where = {
+            thisIsComment: null,
+            user: {isBlocked: false},
         };
+
         if (keyword) {
             where.OR = [
                 { message: { contains: keyword, mode: 'insensitive' } },
@@ -260,6 +274,12 @@ export async function getAllPosts(req, res) {
                         likes: true
                     }
                 },
+
+                likes: currentUserId ? {
+                    where: {
+                        author: currentUserId
+                    }
+                } : false,
                 linkImages: {
                     include: {
                         image: true
@@ -276,13 +296,19 @@ export async function getAllPosts(req, res) {
             take: parseInt(limit)
         });
 
-        const totalPosts = await prisma.post.count({ where });
+        // ✅ AJOUT: Transformer les données pour ajouter isLiked
+        const transformedPosts = posts.map(post => ({
+            ...post,
+            isLiked: post.likes && post.likes.length > 0,
+            likes: undefined
+        }));
 
+        const totalPosts = await prisma.post.count({ where });
         const totalPages = Math.ceil(totalPosts / parseInt(limit));
         const currentPage = parseInt(page);
 
         res.status(200).json({
-            posts,
+            posts: transformedPosts,
             pagination: {
                 currentPage,
                 totalPages,
@@ -768,6 +794,8 @@ export async function getLikedPostsByUser(req, res) {
         const { page = 1, limit = 20 } = req.query;
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
+        const currentUserId = req.user?.id;
+
         const likedPosts = await prisma.likePost.findMany({
             where: {
                 author: userId
@@ -788,7 +816,12 @@ export async function getLikedPostsByUser(req, res) {
                                 commentsOnThis: true,
                                 likes: true
                             }
-                        }
+                        },
+                        likes: currentUserId ? {
+                            where: {
+                                author: currentUserId
+                            }
+                        } : false
                     }
                 }
             },
@@ -801,7 +834,9 @@ export async function getLikedPostsByUser(req, res) {
 
         const posts = likedPosts.map(like => ({
             ...like.post,
-            likedAt: like.createdAt
+            likedAt: like.createdAt,
+            isLiked: like.post.likes && like.post.likes.length > 0,
+            likes: undefined
         }));
 
         res.status(200).json({
