@@ -13,7 +13,7 @@ const server = http.createServer(app);
 const prisma = new PrismaClient();
 
 mongoose
-    .connect(process.env.MONGO_URI)
+    .connect(`mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_NAME}?authSource=admin`)
     .then(() => {
         console.log("MongoDB connected!");
     })

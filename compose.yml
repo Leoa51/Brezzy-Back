@@ -247,3 +247,5 @@ volumes:
   mongodb:
   postegredb:
   matomo:
+  caddy_data:
+  caddy_config:

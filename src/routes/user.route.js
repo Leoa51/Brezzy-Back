@@ -18,7 +18,8 @@ import {
     getMe,
     blockUser,
     unblockUser,
-    updateProfilePicture
+    updateProfilePicture,
+    getIsFollowing
 } from '../controllers/user.controller.js'
 
 import { body, param } from 'express-validator';
