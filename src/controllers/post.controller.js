@@ -57,13 +57,23 @@ export async function createPost(req, res) {
                 const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
                 formData.append('image', blob, req.file.originalname);
 
-                const uploadResponse = await fetch('http://localhost:3100/api/media/upload', {
+                const uploadResponse = await fetch(process.env.API_URI + '/api/media/upload', {
                     method: 'POST',
                     body: formData,
                     headers: {
-                        'User-Agent': 'PostService/1.0'
+                        'User-Agent': 'PostService/1.0',
+                        Authorization: `${req.headers.authorization}`
                     }
                 });
+                // console.log({
+                //     method: 'POST',
+                //     body: formData,
+                //     headers: {
+                //         'User-Agent': 'PostService/1.0',
+                //         Authorization: `Bearer ${req.headers.authorization}`
+                //     }
+                // });
+                // console.log(uploadResponse);
 
                 if (!uploadResponse.ok) {
                     const errorText = await uploadResponse.text();
@@ -244,6 +254,16 @@ export async function getAllPosts(req, res) {
                     select: {
                         commentsOnThis: true,
                         likes: true
+                    }
+                },
+                linkImages: {
+                    include: {
+                        image: true
+                    }
+                },
+                linkVideos: {
+                    include: {
+                        video: true
                     }
                 }
             },

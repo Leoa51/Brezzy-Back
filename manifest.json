@@ -1,0 +1,36 @@
+{
+  "short_name": "Brezzy",
+  
+  "name": "Brezzy App",
+
+  "description": "",
+
+  "icons": [
+    {
+      "src": "icon-192x192.png", // TODO add icon
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icon-512x512.png", // TODO add icon ( minimal 512x512 )
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  
+  "start_url": "/",
+
+  "scope": "/",
+  
+  "display": "standalone",
+  
+  "theme_color": "#000000",
+  // status bar color on mobile
+  
+  "background_color": "#ffffff",
+  // splash screen color
+  
+  "orientation": "portrait-primary"
+}

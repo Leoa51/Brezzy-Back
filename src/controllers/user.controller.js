@@ -1131,7 +1131,7 @@ export async function updateProfilePicture(req, res) {
         const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
         formData.append('image', blob, `profile_${userId}_${req.file.originalname}`);
 
-        const uploadResponse = await fetch('http://localhost:3100/api/media/upload', {
+        const uploadResponse = await fetch('process.env.API_URI + /api/media/upload', {
             method: 'POST',
             body: formData,
             headers: {
@@ -1164,7 +1164,7 @@ export async function updateProfilePicture(req, res) {
 
             if (currentUser.ppPath) {
                 try {
-                    await fetch(`http://localhost:3100/api/media/delete/${encodeURIComponent(currentUser.ppPath)}`, {
+                    await fetch(`process.env.API_URI + /api/media/delete/${encodeURIComponent(currentUser.ppPath)}`, {
                         method: 'DELETE',
                         headers: {
                             'User-Agent': 'UserService/1.0'
