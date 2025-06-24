@@ -255,6 +255,16 @@ export async function getAllPosts(req, res) {
                         commentsOnThis: true,
                         likes: true
                     }
+                },
+                linkImages: {
+                    include: {
+                        image: true
+                    }
+                },
+                linkVideos: {
+                    include: {
+                        video: true
+                    }
                 }
             },
             orderBy: {
