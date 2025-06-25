@@ -142,6 +142,7 @@ export async function getAllUsers(req, res) {
         const skip = (page - 1) * limit;
 
         const where = search ? {
+            isBlocked: false,
             OR: [
                 { username: { contains: search, mode: 'insensitive' } },
                 { name: { contains: search, mode: 'insensitive' } },
