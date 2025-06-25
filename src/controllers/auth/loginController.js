@@ -18,7 +18,7 @@ export default async function (req, res) {
             return res.status(403).json({ message: 'User is banned' });
         }
         // check if user verified his email
-        if (!user.validated) {
+        if (!user.isValidated) {
             return res.status(403).json({ message: 'Please verify your email' });
         }
         if (!user) return res.status(400).json({ message: 'Invalid credentials' });
