@@ -37,7 +37,7 @@ export async function verifyUser(req, res) {
             where: { id },
             data: { validated: true },
         });
-        return res.redirect(302, 'https://breezy.panini.simon51100.fr');
+        return res.redirect(302, 'https://breezy.panini.simon511000.fr');
     } catch (error) {
         return res.status(500).json({ success: false, message: 'Internal server error' });
     }
