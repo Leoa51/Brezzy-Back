@@ -8,6 +8,7 @@ import {
     getUserById,
     getUserByUsername,
     modifyUser,
+    modifyUserProfile,
     deleteUser,
     toggleBlockUser,
     toggleFollowUser,
@@ -24,6 +25,7 @@ import {
 
 import { body, param } from 'express-validator';
 import multer from "multer";
+import path from "path";
 
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -62,6 +64,8 @@ userRouter.get('/:id/following', param('id').custom(value => isCuid(value)), get
 userRouter.get('/:id', param('id').custom(value => isCuid(value)), getUserById);
 
 userRouter.get('/profile-info/:id', param('id').custom(value => isCuid(value)), getUserInfoById);
+
+userRouter.patch('/modify-profile', modifyUserProfile);
 
 userRouter.patch('/:id', param('id').custom(value => isCuid(value)), modifyUser);
 

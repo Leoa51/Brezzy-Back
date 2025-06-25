@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { validationResult } from 'express-validator';
+import jwt from "jsonwebtoken";
 const prisma = new PrismaClient();
 
 export async function createUser(req, res) {
@@ -412,6 +413,89 @@ export async function modifyUser(req, res) {
         });
     }
 }
+
+
+
+
+export async function modifyUserProfile(req, res) {
+    try {
+        // Extract and validate authorization token
+        const authHeader = req.header('Authorization');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Invalid authentication token format' });
+        }
+
+        const token = authHeader.replace('Bearer ', '');
+
+        // Verify JWT and extract user ID
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded._id;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Invalid user identification' });
+        }
+
+        const { username, name, bio, ppPath, language } = req.body;
+
+        const updateData = {};
+
+        if (username) {
+            const existingUser = await prisma.user_.findUnique({
+                where: {
+                    username,
+                    NOT: { id: userId } // Exclude current user from check
+                }
+            });
+
+            if (existingUser) {
+                return res.status(409).json({ error: "Username already exists" });
+            }
+
+            updateData.username = username;
+        }
+
+        if (name) updateData.name = name;
+        if (bio !== undefined) updateData.bio = bio;
+        if (ppPath !== undefined) updateData.ppPath = ppPath;
+        if (language !== undefined) updateData.language = language;
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ error: "No valid fields provided for update" });
+        }
+
+        // Update user in database
+        const updatedUser = await prisma.user_.update({
+            where: { id: userId },
+            data: updateData,
+            select: {
+                username: true,
+                name: true,
+                email: true,
+                bio: true,
+                updatedAt: true
+            }
+        });
+
+        return res.status(200).json({
+            message: "User profile updated successfully",
+            user: updatedUser
+        });
+
+    } catch (error) {
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({ error: 'Invalid authentication token' });
+        }
+
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ error: 'Authentication token expired' });
+        }
+
+        console.error('Error updating user profile:', error);
+        return res.status(500).json({ error: 'Internal server error during profile update' });
+    }
+}
+
+
 
 export async function deleteUser(req, res) {
     const errors = validationResult(req);
@@ -1018,6 +1102,7 @@ export async function updateProfilePicture(req, res) {
             method: 'POST',
             body: formData,
             headers: {
+                Authorization: `${req.headers.authorization}`,
                 'User-Agent': 'UserService/1.0'
             }
         });
@@ -1050,7 +1135,8 @@ export async function updateProfilePicture(req, res) {
                     await fetch(process.env.API_URI + `/api/media/delete/${encodeURIComponent(currentUser.ppPath)}`, {
                         method: 'DELETE',
                         headers: {
-                            'User-Agent': 'UserService/1.0'
+                            'User-Agent': 'UserService/1.0',
+                            'Authorization': `${req.headers.authorization}`
                         }
                     });
                 } catch (deleteError) {
