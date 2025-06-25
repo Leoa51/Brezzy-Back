@@ -49,7 +49,7 @@ export async function getConversationById(req, res) {
   }
 
   try {
-    const conversation = await Conversation.findById(req.params.id);
+    const conversation   = await Conversation.findById(req.params.id);
     if (!conversation) return res.status(404).send("Conversation not found");
 
     if (!conversation.participants.includes(req.user.id)) {

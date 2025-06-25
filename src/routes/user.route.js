@@ -18,7 +18,8 @@ import {
     getMe,
     blockUser,
     unblockUser,
-    updateProfilePicture
+    updateProfilePicture,
+    getIsFollowing
 } from '../controllers/user.controller.js'
 
 import { body, param } from 'express-validator';
@@ -51,6 +52,8 @@ userRouter.get('/by-username/:username', param('username').isString().notEmpty()
 userRouter.patch('/:id/toggle-block', param('id').custom(value => isCuid(value)), toggleBlockUser);
 
 userRouter.post('/toggle-follow', toggleFollowUser);
+
+userRouter.get('/isFollowing/:id', getIsFollowing)
 
 userRouter.get('/:id/followers', param('id').custom(value => isCuid(value)), getUserFollowers);
 

@@ -6,7 +6,6 @@ import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import Conversation from './models/conversation.model.js';
-
 dotenv.config();
 
 const app = express();
@@ -45,7 +44,6 @@ io.use(async (socket, next) => {
         });
 
         if (!user) throw new Error('User not found');
-
         socket.user = user;
         next();
     } catch (error) {
@@ -59,19 +57,21 @@ io.on('connection', (socket) => {
     usersSocketIds[userId] = socket.id;
     console.log(`User ${userId} connected with socket ID ${socket.id}`);
     console.log(usersSocketIds)
+
     socket.on('disconnect', () => {
         delete usersSocketIds[userId];
         console.log(`User ${userId} disconnected`);
     });
 
     socket.on('conversation', async (data) => {
-        const participants = data.participants;
-
+        const participants = data;
         try {
             const newConversation = await Conversation.create({
                 participants,
                 messages: [],
             });
+            await newConversation.save();
+            console.log('conv created');
 
             participants.forEach(participantId => {
                 const pid = participantId.toString();
@@ -113,17 +113,36 @@ io.on('connection', (socket) => {
             conversation.messages.push(newMessage);
             await conversation.save();
 
-            const userIds = conversation.participants
-            console.log(userIds)
+            const userIds = conversation.participants;
 
-            userIds.forEach(uid => {
+            for (const uid of userIds) {
                 if (usersSocketIds[uid]) {
                     io.to(usersSocketIds[uid]).emit('message', {
                         conversationId,
                         message: newMessage
                     });
+
+                    const notification = {
+                        title: 'New message',
+                        body: 'There is a new message',
+                        url: process.env.API_URI + '/conversation',
+                        userId: uid
+                    };
+
+                    try {
+                        await fetch(process.env.API_URI + '/send-to-user', {
+                            method: "POST",
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${socket.handshake.headers['authorization']}`
+                            },
+                            body: JSON.stringify(notification)
+                        });
+                    } catch (fetchError) {
+                        console.error('Error sending notification:', fetchError.message);
+                    }
                 }
-            });
+            }
         } catch (err) {
             console.error('Error handling message:', err.message);
         }

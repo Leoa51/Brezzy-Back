@@ -274,7 +274,28 @@ export async function getAllPosts(req, res) {
             take: parseInt(limit)
         });
 
-        res.status(200).json(posts);
+        const totalPosts = await prisma.post.count({
+            where: {
+                thisIsComment: null
+            }
+        });
+
+        const totalPages = Math.ceil(totalPosts / parseInt(limit));
+        const currentPage = parseInt(page);
+
+
+        res.status(200).json({
+            posts,
+            pagination: {
+                currentPage,
+                totalPages,
+                totalPosts,
+                limit: parseInt(limit),
+                hasMore: currentPage < totalPages,
+                hasPrevious: currentPage > 1
+            }
+        });
+
     } catch (err) {
         console.error("Error fetching posts:", err);
         res.status(500).json({
@@ -551,11 +572,12 @@ export async function likePost(req, res) {
     const { postId } = req.body;
 
     try {
-        const postExists = await prisma.post.findUnique({
-            where: { id: postId }
+        const post = await prisma.post.findUnique({
+            where: { id: postId },
+            include: { author: true }
         });
 
-        if (!postExists) {
+        if (!post) {
             return res.status(404).json({
                 error: "Post not found"
             });
@@ -579,6 +601,8 @@ export async function likePost(req, res) {
                 }
             }
         });
+
+        let actionPerformed = false;
 
         if (existingLike) {
             await prisma.likePost.delete({
@@ -611,14 +635,149 @@ export async function likePost(req, res) {
                 where: { idPost: postId }
             });
 
+            actionPerformed = true;
+
             res.status(200).json({
                 message: "Post liked",
                 liked: true,
                 like_Number: likeCount
             });
+
+            if (post.author.id !== req.user.id && actionPerformed) {
+                try {
+                    const notificationBody = {
+                        title: 'New Like',
+                        body: `${userExists.username || 'Someone'} liked your post`,
+                        userId: post.author.id,
+                        url: `/post/${postId}`
+                    };
+
+                    await fetch(process.env.API_URI + `/api/notifications/send-to-user`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': req.headers.authorization },
+                        body: JSON.stringify(notificationBody)
+                    });
+                } catch (notificationError) {
+                    console.error("Error sending notification:", notificationError);
+                }
+            }
         }
     } catch (err) {
         console.error("Error toggling like:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+
+export async function getIsLiked(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const { postId } = req.params;
+        const userId = req.user.id;
+
+        const postExists = await prisma.post.findUnique({
+            where: { id: postId }
+        });
+
+        if (!postExists) {
+            return res.status(404).json({
+                error: "Post not found"
+            });
+        }
+
+        const like = await prisma.likePost.findUnique({
+            where: {
+                idPost_author: {
+                    idPost: postId,
+                    author: userId
+                }
+            }
+        });
+
+        const likeCount = await prisma.likePost.count({
+            where: { idPost: postId }
+        });
+
+        res.status(200).json({
+            isLiked: !!like,
+            likeCount: likeCount,
+            postId: postId
+        });
+
+    } catch (err) {
+        console.error("Error checking like status:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
+    }
+}
+
+export async function getLikedPostsByUser(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const { userId } = req.params;
+        const { page = 1, limit = 20 } = req.query;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const likedPosts = await prisma.likePost.findMany({
+            where: {
+                author: userId
+            },
+            include: {
+                post: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                username: true,
+                                name: true,
+                                ppPath: true
+                            }
+                        },
+                        _count: {
+                            select: {
+                                commentsOnThis: true,
+                                likes: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
+            skip,
+            take: parseInt(limit)
+        });
+
+        const posts = likedPosts.map(like => ({
+            ...like.post,
+            likedAt: like.createdAt
+        }));
+
+        res.status(200).json({
+            posts,
+            pagination: {
+                currentPage: parseInt(page),
+                totalPages: Math.ceil(likedPosts.length / parseInt(limit)),
+                totalLikes: likedPosts.length
+            }
+        });
+
+    } catch (err) {
+        console.error("Error fetching liked posts:", err);
         res.status(500).json({
             error: "Internal server error",
             details: err.message

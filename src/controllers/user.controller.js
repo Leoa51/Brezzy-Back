@@ -492,7 +492,49 @@ export async function toggleBlockUser(req, res) {
         });
     }
 }
+export async function getIsFollowing(req, res) {
+    try {
+        const targetUserId = req.params.id;
+        const currentUserId = req.user.id;
 
+        if (!targetUserId) {
+            return res.status(400).json({
+                success: false,
+                error: "ID utilisateur manquant"
+            });
+        }
+
+        if (targetUserId === currentUserId) {
+            return res.status(400).json({
+                success: false,
+                error: "Impossible de vérifier si vous vous suivez vous-même"
+            });
+        }
+        const followRelation = await prisma.follow.findUnique({
+            where: {
+                followerId_followedId: {
+                    followerId: currentUserId,
+                    followedId: targetUserId
+                }
+            }
+        });
+
+        const isFollowing = followRelation !== null;
+
+
+        return res.status(200).json({
+            success: true,
+            following: isFollowing,
+        });
+
+    } catch (error) {
+        console.error(" Erreur vérification isFollowing:", error);
+        return res.status(500).json({
+            success: false,
+            error: "Erreur serveur lors de la vérification du statut de follow"
+        });
+    }
+}
 export async function toggleFollowUser(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -500,7 +542,8 @@ export async function toggleFollowUser(req, res) {
     }
 
     try {
-        const { followerId, followedId } = req.body;
+        const { followedId } = req.body;
+        const followerId = req.user.id;
 
         if (!followerId || !followedId) {
             return res.status(400).json({
@@ -522,6 +565,8 @@ export async function toggleFollowUser(req, res) {
                 }
             }
         });
+
+        let isNewFollow = false;
 
         if (existingFollow) {
             await prisma.follow.delete({
@@ -545,10 +590,34 @@ export async function toggleFollowUser(req, res) {
                 }
             });
 
+            isNewFollow = true;
+
             res.status(200).json({
                 message: "Followed successfully",
                 following: true
             });
+        }
+        if (isNewFollow) {
+            try {
+                const follower = await prisma.user_.findUnique({
+                    where: { id: followerId }
+                });
+
+                const notificationBody = {
+                    title: 'New Follower',
+                    body: `${follower.username || 'Someone'} started following you`,
+                    userId: followedId,
+                    url: `/profile/${followerId}`
+                };
+
+                await fetch(process.env.API_URI + `/api/notifications/send-to-user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': req.headers.authorization },
+                    body: JSON.stringify(notificationBody)
+                });
+            } catch (notificationError) {
+                console.error("Error sending notification:", notificationError);
+            }
         }
     } catch (err) {
         console.error("Error toggling follow:", err);
@@ -945,7 +1014,7 @@ export async function updateProfilePicture(req, res) {
         const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
         formData.append('image', blob, `profile_${userId}_${req.file.originalname}`);
 
-        const uploadResponse = await fetch('process.env.API_URI + /api/media/upload', {
+        const uploadResponse = await fetch(process.env.API_URI + '/api/media/upload', {
             method: 'POST',
             body: formData,
             headers: {
@@ -978,7 +1047,7 @@ export async function updateProfilePicture(req, res) {
 
             if (currentUser.ppPath) {
                 try {
-                    await fetch(`process.env.API_URI + /api/media/delete/${encodeURIComponent(currentUser.ppPath)}`, {
+                    await fetch(process.env.API_URI + `/api/media/delete/${encodeURIComponent(currentUser.ppPath)}`, {
                         method: 'DELETE',
                         headers: {
                             'User-Agent': 'UserService/1.0'
@@ -1010,7 +1079,6 @@ export async function updateProfilePicture(req, res) {
         });
     }
 }
-
 
 process.on('beforeExit', async () => {
     await prisma.$disconnect();

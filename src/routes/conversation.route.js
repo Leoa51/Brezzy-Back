@@ -14,7 +14,7 @@ conversationRouter.post('/', body('participants').isArray(), createConversation)
 
 conversationRouter.get('/', getAllConversations);
 
-conversationRouter.get('/:id', param('id').isUUID(), getConversationById);
+conversationRouter.get('/:id', getConversationById);
 
 conversationRouter.patch('/:id', param('id').isUUID(), modifyConversation);
 
