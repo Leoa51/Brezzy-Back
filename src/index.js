@@ -5,6 +5,7 @@ import cors from 'cors'
 import authMiddleware from './middleware/authMiddleware.js';
 import { authRouter } from './routes/auth.route.js';
 import minioRouter from './routes/minio.route.js';
+import nodemailer from 'nodemailer'
 
 
 dotenv.config();
@@ -55,7 +56,6 @@ switch (process.env.SERVICE) {
 
     break;
 }
-
 
 
 mongoose
