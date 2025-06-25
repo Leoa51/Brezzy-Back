@@ -221,7 +221,29 @@ export async function getAllPostFromFollowers(req, res) {
             likes: undefined
         }));
 
-        res.status(200).json(transformedPosts);
+        const totalPosts = await prisma.post.count({
+            where: {
+                thisIsComment: null,
+                author: {
+                    in: followedIds
+                }
+            }
+        });
+
+        const totalPages = Math.ceil(totalPosts / parseInt(limit));
+        const currentPage = parseInt(page);
+
+        res.status(200).json({
+            posts: transformedPosts,
+            pagination: {
+                currentPage,
+                totalPages,
+                totalPosts,
+                limit: parseInt(limit),
+                hasMore: currentPage < totalPages,
+                hasPrevious: currentPage > 1
+            }
+        });
     } catch (err) {
         console.error("Error fetching posts from followers:", err);
         res.status(500).json({
@@ -296,7 +318,6 @@ export async function getAllPosts(req, res) {
             take: parseInt(limit)
         });
 
-        // ✅ AJOUT: Transformer les données pour ajouter isLiked
         const transformedPosts = posts.map(post => ({
             ...post,
             isLiked: post.likes && post.likes.length > 0,
