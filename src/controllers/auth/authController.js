@@ -24,15 +24,12 @@ export const isAuthenticated = (req, res) => {
 export async function verifyUser(req, res) {
     const { id } = req.params;
 
-    console.log('[verifyUser] id reçu :', id);
     try {
         const user = await prisma.user_.findUnique({ where: { id } });
-        console.log('[verifyUser] user trouvé :', user);
-
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
-        if (user.validated) {
+        if (user.isValidated) {
             return res.status(200).json({ success: true, message: 'User is already verified' });
         }
 
@@ -40,9 +37,8 @@ export async function verifyUser(req, res) {
             where: { id },
             data: { validated: true },
         });
-        return res.redirect(302, 'https://google.com');
+        return res.redirect(302, 'https://breezy.panini.simon51100.fr');
     } catch (error) {
-        console.error('[verifyUser] error :', error);
         return res.status(500).json({ success: false, message: 'Internal server error' });
     }
 }
