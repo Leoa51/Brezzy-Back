@@ -30,7 +30,7 @@ switch (process.env.SERVICE) {
   case 'users':
     app.use('/', authMiddleware, usersRouter);
   case 'posts':
-    app.use('/', authMiddleware, postsRouter);
+    app.use('/api/posts', authMiddleware, postsRouter);
   case 'chat':
     app.use('/', authMiddleware, conversationRouter);
   case 'auth':
