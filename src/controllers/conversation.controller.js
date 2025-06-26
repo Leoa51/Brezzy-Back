@@ -49,16 +49,14 @@ export async function getConversationById(req, res) {
   }
 
   try {
-    const conversation = await Conversation.findById(req.params.id);
+    const conversation   = await Conversation.findById(req.params.id);
     if (!conversation) return res.status(404).send("Conversation not found");
 
     if (!conversation.participants.includes(req.user.id)) {
       return res.status(403).send("You are not in the conversation");
     }
 
-    console.log(conversation)
-    return res.status(200).json(conversation);
-
+    res.status(200).json(conversation);
   } catch (err) {
     res.status(500).json(err);
   }

@@ -2,7 +2,6 @@ import { PrismaClient } from '@prisma/client';
 import { validationResult } from 'express-validator';
 const prisma = new PrismaClient();
 
-
 export async function createPost(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -11,6 +10,7 @@ export async function createPost(req, res) {
 
     const { message, originalPostId, parentCommentId, tags, image } = req.body;
     const author = req.user.id;
+
     if (!message || !author) {
         return res.status(400).json({
             error: "Message and author are required"
@@ -109,25 +109,37 @@ export async function createPost(req, res) {
         }
 
         if (originalPostId) {
-            const originalPost = await prisma.post.findUnique({ where: { id: originalPostId } });
+            const originalPost = await prisma.post.findUnique({
+                where: { id: originalPostId }
+            });
 
             if (!originalPost) {
                 if (uploadedImage) {
-                    await prisma.image.deleteMany({ where: { cdnPath: uploadedImage } });
+                    await prisma.image.deleteMany({
+                        where: { cdnPath: uploadedImage }
+                    });
                 }
                 await prisma.post.delete({ where: { id: newPost.id } });
-                return res.status(404).json({ error: "Original post not found" });
+                return res.status(404).json({
+                    error: "Original post not found"
+                });
             }
 
             if (parentCommentId) {
-                const parentComment = await prisma.commentPost.findUnique({ where: { id: parentCommentId } });
+                const parentComment = await prisma.commentPost.findUnique({
+                    where: { id: parentCommentId }
+                });
 
                 if (!parentComment || parentComment.postId !== originalPostId) {
                     if (uploadedImage) {
-                        await prisma.image.deleteMany({ where: { cdnPath: uploadedImage } });
+                        await prisma.image.deleteMany({
+                            where: { cdnPath: uploadedImage }
+                        });
                     }
                     await prisma.post.delete({ where: { id: newPost.id } });
-                    return res.status(400).json({ error: "Invalid parent comment" });
+                    return res.status(400).json({
+                        error: "Invalid parent comment"
+                    });
                 }
             }
 
@@ -162,6 +174,7 @@ export async function createPost(req, res) {
         });
     }
 }
+
 export async function getAllPostFromFollowers(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -313,7 +326,9 @@ export async function getAllPosts(req, res) {
                     }
                 }
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy: {
+                createdAt: 'desc'
+            },
             skip: parseInt(skip),
             take: parseInt(limit)
         });
@@ -328,6 +343,7 @@ export async function getAllPosts(req, res) {
         const totalPages = Math.ceil(totalPosts / parseInt(limit));
         const currentPage = parseInt(page);
 
+
         res.status(200).json({
             posts: transformedPosts,
             pagination: {
@@ -339,9 +355,13 @@ export async function getAllPosts(req, res) {
                 hasPrevious: currentPage > 1
             }
         });
+
     } catch (err) {
-        console.error('Error fetching posts:', err);
-        res.status(500).json({ error: 'Internal server error', details: err.message });
+        console.error("Error fetching posts:", err);
+        res.status(500).json({
+            error: "Internal server error",
+            details: err.message
+        });
     }
 }
 
@@ -626,11 +646,12 @@ export async function likePost(req, res) {
     const { postId } = req.body;
 
     try {
-        const postExists = await prisma.post.findUnique({
-            where: { id: postId }
+        const post = await prisma.post.findUnique({
+            where: { id: postId },
+            // include: { author: true }
         });
 
-        if (!postExists) {
+        if (!post) {
             return res.status(404).json({
                 error: "Post not found"
             });
@@ -654,6 +675,8 @@ export async function likePost(req, res) {
                 }
             }
         });
+
+        let actionPerformed = false;
 
         if (existingLike) {
             await prisma.likePost.delete({
@@ -686,11 +709,32 @@ export async function likePost(req, res) {
                 where: { idPost: postId }
             });
 
+            actionPerformed = true;
+
             res.status(200).json({
                 message: "Post liked",
                 liked: true,
                 like_Number: likeCount
             });
+
+            if (post.author.id !== req.user.id && actionPerformed) {
+                try {
+                    const notificationBody = {
+                        title: 'New Like',
+                        body: `${userExists.username || 'Someone'} liked your post`,
+                        userId: post.author.id,
+                        url: `/post/${postId}`
+                    };
+
+                    await fetch(process.env.API_URI + `/api/notifications/send-to-user`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': req.headers.authorization },
+                        body: JSON.stringify(notificationBody)
+                    });
+                } catch (notificationError) {
+                    console.error("Error sending notification:", notificationError);
+                }
+            }
         }
     } catch (err) {
         console.error("Error toggling like:", err);
