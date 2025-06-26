@@ -116,7 +116,7 @@ services:
       - mongodb
       - postgredb
     environment:
-      - SERVICE=chat
+      - SERVICE=websocket
       - API_PORT=3000
     networks:
       - app
@@ -124,6 +124,24 @@ services:
     env_file:
       - .env
     command: npm run websocket
+  api-conversation:
+    image: api:latest
+    restart: always
+    container_name: api-conversation
+    ports:
+      - "3003:3000"
+    depends_on:
+      - mongodb
+      - postgredb
+    environment:
+      - SERVICE=chat
+      - API_PORT=3000
+    networks:
+      - app
+      - db
+    env_file:
+      - .env
+    command: npm run start
 
   api-auth:
     image: api:latest
@@ -202,6 +220,7 @@ services:
       - api-auth
       - api-admin
       - api-tags
+      - api-conversation
       - minio
     networks:
       - app
