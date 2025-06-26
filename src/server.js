@@ -26,7 +26,11 @@ mongoose
 const usersSocketIds = {};
 
 const io = new Server(server, {
-    path: '/ws'
+    path: '/ws',
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST'],
+    }
 });
 
 io.use(async (socket, next) => {
