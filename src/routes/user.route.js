@@ -58,7 +58,7 @@ userRouter.get('/', getAllUsers);
 
 userRouter.get('/by-username/:username', param('username').isString().notEmpty(), getUserByUsername);
 
-userRouter.patch('/:id/toggle-block', ['adminstrator', 'moderator'], param('id').custom(value => isCuid(value)), toggleBlockUser);
+userRouter.patch('/:id/toggle-block', roleMiddleware(['adminstrator', 'moderator']), param('id').custom(value => isCuid(value)), toggleBlockUser);
 
 userRouter.post('/toggle-follow', toggleFollowUser);
 
@@ -84,9 +84,9 @@ userRouter.post('/:id/report', [
     param('id').isString().notEmpty().withMessage('userId is required'), body('reason').optional().isString().withMessage('Reason must be a string')
 ], reportUser);
 
-userRouter.post('/block', ['adminstrator', 'moderator'], blockUser);
+userRouter.post('/block', roleMiddleware(['adminstrator', 'moderator']), blockUser);
 
-userRouter.post('/unblock', ['adminstrator', 'moderator'], unblockUser);
+userRouter.post('/unblock', roleMiddleware(['adminstrator', 'moderator']), unblockUser);
 
 userRouter.put('/profile-picture', upload.single('profilePicture'), updateProfilePicture);
 

@@ -5,7 +5,6 @@ import cors from 'cors'
 import authMiddleware from './middleware/authMiddleware.js';
 import { authRouter } from './routes/auth.route.js';
 import minioRouter from './routes/minio.route.js';
-import nodemailer from 'nodemailer'
 import isBannedMiddleware from './middleware/isBannedMiddleware.js'
 
 dotenv.config();
