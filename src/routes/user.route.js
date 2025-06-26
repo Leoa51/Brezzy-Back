@@ -3,8 +3,26 @@ import express from 'express';
 const userRouter = express.Router();
 import { isCuid } from '@paralleldrive/cuid2';
 import {
-    createUser, getAllUsers, getUserById, getUserByUsername, modifyUser, deleteUser,
-    toggleBlockUser, toggleFollowUser, getUserFollowers, getUserFollowing, getUserInfoById, getUserMessages, getMe, blockUser, unblockUser, getReportedUser, getIsFollowing, getBannedUser, reportUser, updateProfilePicture
+    createUser,
+    getAllUsers,
+    getUserById,
+    getUserByUsername,
+    modifyUser,
+    deleteUser,
+    toggleBlockUser,
+    toggleFollowUser,
+    getUserFollowers,
+    getUserFollowing,
+    getUserInfoById,
+    getUserMessages,
+    getMe,
+    blockUser,
+    unblockUser,
+    updateProfilePicture,
+    getIsFollowing,
+    getReportedUser,
+    getBannedUser,
+    reportUser,
 } from '../controllers/user.controller.js'
 
 import { body, param } from 'express-validator';
