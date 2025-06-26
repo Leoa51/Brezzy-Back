@@ -34,7 +34,7 @@ breezy-api.panini.simon511000.fr {
         }
     }
     
-    handle /api/posts* {
+    handle_path /api/posts* {
         reverse_proxy api-posts:3000 {
             header_up Host {upstream_hostport}
         }
