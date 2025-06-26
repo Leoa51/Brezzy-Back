@@ -1,48 +1,142 @@
 {
     admin 0.0.0.0:2019
     auto_https off
+    debug
+    
+    log {
+        output stdout
+        format json
+        level DEBUG
+    }
 }
 
+breezy-api.panini.simon511000.fr {
+    @options method OPTIONS
+    handle @options {
+        header {
+            Access-Control-Allow-Origin "*"
+            Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+            Access-Control-Allow-Headers "Content-Type, Authorization"
+            Access-Control-Max-Age "86400"
+        }
+        respond 204
+    }
 
-localhost:80 {
-    handle /api/media/* {
-        reverse_proxy minio:9001
-    }
-    handle /api/auth/* {
-        reverse_proxy api-auth:3000
+    handle_path /api/media/* {
+        reverse_proxy minio:9001 {
+            header_up Host {upstream_hostport}
+        }
     }
     
-    handle /api/posts/* {
-        reverse_proxy api-posts:3000
+    handle_path /api/auth/* {
+        reverse_proxy api-auth:3000 {
+            header_up Host {upstream_hostport}
+        }
     }
     
-    handle /api/users/* {
-        reverse_proxy api-users:3000
+    handle_path /api/posts/* {
+        reverse_proxy api-posts:3000 {
+            header_up Host {upstream_hostport}
+        }
     }
     
-    handle /api/conversations/* {
-        reverse_proxy api-websocket:3000
+    handle_path /api/users/* {
+        reverse_proxy api-users:3000 {
+            header_up Host {upstream_hostport}
+        }
     }
     
-    handle /api/admin/* {
-        reverse_proxy api-admin:3000
+    handle_path /api/conversations/* {
+        reverse_proxy api-websocket:3000 {
+            header_up Host {upstream_hostport}
+        }
     }
     
-    handle /api/tags/* {
-        reverse_proxy api-tags:3000
+    handle_path /api/admin/* {
+        reverse_proxy api-admin:3000 {
+            header_up Host {upstream_hostport}
+        }
     }
     
+    handle_path /api/tags/* {
+        reverse_proxy api-tags:3000 {
+            header_up Host {upstream_hostport}
+        }
+    }
+    
+    
+    # Headers CORS pour toutes les requêtes
     header {
         Access-Control-Allow-Origin "*"
         Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS"
         Access-Control-Allow-Headers "Content-Type, Authorization"
     }
-    
+}
+
+:80, localhost:80 {
     @options method OPTIONS
-    respond @options 200
+    handle @options {
+        header {
+            Access-Control-Allow-Origin "*"
+            Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+            Access-Control-Allow-Headers "Content-Type, Authorization"
+            Access-Control-Max-Age "86400"
+        }
+        respond 204
+    }
+
+    # Routes API
+    handle_path /api/media/* {
+        reverse_proxy minio:9001 {
+            header_up Host {upstream_hostport}
+        }
+    }
     
-    log {
-        output file /var/log/caddy/access.log
-        format json
+    handle_path /api/auth/* {
+        reverse_proxy api-auth:3000 {
+            header_up Host {upstream_hostport}
+        }
+    }
+    
+    handle_path /api/posts/* {
+        reverse_proxy api-posts:3000 {
+            header_up Host {upstream_hostport}
+        }
+    }
+    
+    handle_path /api/users/* {
+        reverse_proxy api-users:3000 {
+            header_up Host {upstream_hostport}
+        }
+    }
+    
+    handle_path /api/conversations/* {
+        reverse_proxy api-websocket:3000 {
+            header_up Host {upstream_hostport}
+        }
+    }
+    
+    handle_path /api/admin/* {
+        reverse_proxy api-admin:3000 {
+            header_up Host {upstream_hostport}
+        }
+    }
+    
+    handle_path /api/tags/* {
+        reverse_proxy api-tags:3000 {
+            header_up Host {upstream_hostport}
+        }
+    }
+    
+    # Fallback pour les autres requêtes
+    handle {
+        respond "API is running" 200
+    }
+    
+    # Headers CORS
+    header {
+        Access-Control-Allow-Origin "*"
+        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+        Access-Control-Allow-Headers "Content-Type, Authorization"
     }
 }

@@ -8,7 +8,7 @@ export async function createPost(req, res) {
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const { message, originalPostId, parentCommentId } = req.body;
+    const { message, originalPostId, parentCommentId, tags, image } = req.body;
     const author = req.user.id;
 
     if (!message || !author) {
@@ -24,17 +24,31 @@ export async function createPost(req, res) {
                 author
             },
             include: {
-                user: {
-                    select: {
-                        id: true,
-                        username: true,
-                        name: true,
-                        ppPath: true
-                    }
-                }
+                user: { select: { id: true, username: true, name: true, ppPath: true } }
             }
         });
 
+
+
+        if (tags && Array.isArray(tags)) {
+            for (const tagName of tags) {
+                const cleanName = tagName.replace(/^#/, '').trim().toLowerCase();
+                if (!cleanName) continue;
+                let tag = await prisma.tag.findFirst({ where: { name: cleanName } });
+                if (!tag) {
+                    tag = await prisma.tag.create({ data: { name: cleanName, idTag: cleanName } });
+                }
+                await prisma.asso11.upsert({
+                    where: { idTag_idPost: { idTag: tag.idTag, idPost: newPost.id } },
+                    update: {},
+                    create: {
+                        idTag: tag.idTag,
+                        idPost: newPost.id,
+                        author: req.user.id,
+                    }
+                });
+            }
+        }
         let uploadedImage = null;
 
         if (req.file) {
@@ -161,14 +175,6 @@ export async function createPost(req, res) {
     }
 }
 
-
-
-
-
-
-
-
-
 export async function getAllPostFromFollowers(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -208,6 +214,11 @@ export async function getAllPostFromFollowers(req, res) {
                         commentsOnThis: true,
                         likes: true
                     }
+                },
+                likes: {
+                    where: {
+                        author: userId
+                    }
                 }
             },
             orderBy: {
@@ -217,7 +228,35 @@ export async function getAllPostFromFollowers(req, res) {
             take: parseInt(limit)
         });
 
-        res.status(200).json(posts);
+        const transformedPosts = posts.map(post => ({
+            ...post,
+            isLiked: post.likes && post.likes.length > 0,
+            likes: undefined
+        }));
+
+        const totalPosts = await prisma.post.count({
+            where: {
+                thisIsComment: null,
+                author: {
+                    in: followedIds
+                }
+            }
+        });
+
+        const totalPages = Math.ceil(totalPosts / parseInt(limit));
+        const currentPage = parseInt(page);
+
+        res.status(200).json({
+            posts: transformedPosts,
+            pagination: {
+                currentPage,
+                totalPages,
+                totalPosts,
+                limit: parseInt(limit),
+                hasMore: currentPage < totalPages,
+                hasPrevious: currentPage > 1
+            }
+        });
     } catch (err) {
         console.error("Error fetching posts from followers:", err);
         res.status(500).json({
@@ -234,13 +273,27 @@ export async function getAllPosts(req, res) {
     }
 
     try {
-        const { page = 1, limit = 20 } = req.query;
+        const { page = 1, limit = 20, keyword } = req.query;
         const skip = (page - 1) * limit;
 
+        const currentUserId = req.user?.id;
+
+        const where = {
+            thisIsComment: null,
+            user: {isBlocked: false},
+        };
+
+        if (keyword) {
+            where.OR = [
+                { message: { contains: keyword, mode: 'insensitive' } },
+                { user: { username: { contains: keyword, mode: 'insensitive' } } },
+                { user: { name: { contains: keyword, mode: 'insensitive' }, isBlocked: false } },
+                { tags: { some: { tag: { name: { contains: keyword, mode: 'insensitive' } } } } }
+            ];
+        }
+
         const posts = await prisma.post.findMany({
-            where: {
-                thisIsComment: null
-            },
+            where,
             include: {
                 user: {
                     select: {
@@ -256,6 +309,12 @@ export async function getAllPosts(req, res) {
                         likes: true
                     }
                 },
+
+                likes: currentUserId ? {
+                    where: {
+                        author: currentUserId
+                    }
+                } : false,
                 linkImages: {
                     include: {
                         image: true
@@ -274,18 +333,19 @@ export async function getAllPosts(req, res) {
             take: parseInt(limit)
         });
 
-        const totalPosts = await prisma.post.count({
-            where: {
-                thisIsComment: null
-            }
-        });
+        const transformedPosts = posts.map(post => ({
+            ...post,
+            isLiked: post.likes && post.likes.length > 0,
+            likes: undefined
+        }));
 
+        const totalPosts = await prisma.post.count({ where });
         const totalPages = Math.ceil(totalPosts / parseInt(limit));
         const currentPage = parseInt(page);
 
 
         res.status(200).json({
-            posts,
+            posts: transformedPosts,
             pagination: {
                 currentPage,
                 totalPages,
@@ -373,6 +433,8 @@ export async function getPostComments(req, res) {
         const { page = 1, limit = 20 } = req.query;
         const skip = (page - 1) * limit;
 
+        const currentUserId = req.user?.id;
+
         const comments = await prisma.commentPost.findMany({
             where: {
                 postId: postId,
@@ -388,7 +450,18 @@ export async function getPostComments(req, res) {
                                 name: true,
                                 ppPath: true
                             }
-                        }
+                        },
+                        _count: {
+                            select: {
+                                commentsOnThis: true,
+                                likes: true
+                            }
+                        },
+                        likes: currentUserId ? {
+                            where: {
+                                author: currentUserId
+                            }
+                        } : false
                     }
                 },
                 replies: {
@@ -402,26 +475,18 @@ export async function getPostComments(req, res) {
                                         name: true,
                                         ppPath: true
                                     }
-                                }
-                            }
-                        },
-                        replies: {
-                            include: {
-                                commentPost: {
-                                    include: {
-                                        user: {
-                                            select: {
-                                                id: true,
-                                                username: true,
-                                                name: true,
-                                                ppPath: true
-                                            }
-                                        }
+                                },
+                                _count: {
+                                    select: {
+                                        commentsOnThis: true,
+                                        likes: true
                                     }
-                                }
-                            },
-                            orderBy: {
-                                createdAt: 'asc'
+                                },
+                                likes: currentUserId ? {
+                                    where: {
+                                        author: currentUserId
+                                    }
+                                } : false
                             }
                         }
                     },
@@ -437,6 +502,15 @@ export async function getPostComments(req, res) {
             take: parseInt(limit)
         });
 
+        const transformedComments = comments.map(comment => ({
+            ...comment,
+            commentPost: {
+                ...comment.commentPost,
+                isLiked: comment.commentPost.likes && comment.commentPost.likes.length > 0,
+                likes: undefined // Nettoyer pour éviter d'envoyer toutes les données
+            }
+        }));
+
         const totalComments = await prisma.commentPost.count({
             where: {
                 postId: postId,
@@ -445,7 +519,7 @@ export async function getPostComments(req, res) {
         });
 
         res.status(200).json({
-            comments,
+            comments: transformedComments,
             pagination: {
                 currentPage: parseInt(page),
                 totalPages: Math.ceil(totalComments / limit),
@@ -671,7 +745,6 @@ export async function likePost(req, res) {
     }
 }
 
-
 export async function getIsLiked(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -720,6 +793,61 @@ export async function getIsLiked(req, res) {
     }
 }
 
+export async function getReportedPost(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+    try {
+        const reportedPosts = await prisma.post.findMany({
+            where: {
+                reports: {
+                    some: {}
+                }
+            },
+            select: {
+                id: true,
+                author: true,
+                message: true,
+                createdAt: true,
+                updatedAt: true,
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        name: true,
+                        username: true,
+                        email: true,
+                        role: true,
+                        isBlocked: true
+                    }
+                },
+                _count: {
+                    select: {
+                        reports: true,
+                        likes: true
+                    }
+                },
+
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        return res.status(200).json(
+            reportedPosts,
+        );
+
+    } catch (error) {
+        console.error('Erreur lors de la récupération des posts signalés:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Erreur interne du serveur'
+        });
+    }
+}
+
 export async function getLikedPostsByUser(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -730,6 +858,8 @@ export async function getLikedPostsByUser(req, res) {
         const { userId } = req.params;
         const { page = 1, limit = 20 } = req.query;
         const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const currentUserId = req.user?.id;
 
         const likedPosts = await prisma.likePost.findMany({
             where: {
@@ -751,7 +881,12 @@ export async function getLikedPostsByUser(req, res) {
                                 commentsOnThis: true,
                                 likes: true
                             }
-                        }
+                        },
+                        likes: currentUserId ? {
+                            where: {
+                                author: currentUserId
+                            }
+                        } : false
                     }
                 }
             },
@@ -764,7 +899,9 @@ export async function getLikedPostsByUser(req, res) {
 
         const posts = likedPosts.map(like => ({
             ...like.post,
-            likedAt: like.createdAt
+            likedAt: like.createdAt,
+            isLiked: like.post.likes && like.post.likes.length > 0,
+            likes: undefined
         }));
 
         res.status(200).json({

@@ -17,12 +17,15 @@ export default async function (req, res) {
         if (user && user.isBlocked) {
             return res.status(403).json({ message: 'User is banned' });
         }
-
+        // check if user verified his email
+        if (!user.isValidated) {
+            return res.status(403).json({ message: 'Please verify your email' });
+        }
         if (!user) return res.status(400).json({ message: 'Invalid credentials' });
 
         const isMatch = await bcrypt.compare(password, user.passwordHash);
         if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
-        const token = jwt.sign({ email: user.email, _id: user.id, }, process.env.JWT_SECRET, { expiresIn: '5d' });
+        const token = jwt.sign({ email: user.email, _id: user.id, }, process.env.JWT_SECRET, { expiresIn: '10h' });
         res.status(200).json({ token, message: 'Logged in successfully' });
     } catch (err) {
         console.log(err)

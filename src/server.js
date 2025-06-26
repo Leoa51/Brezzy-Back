@@ -6,6 +6,7 @@ import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import Conversation from './models/conversation.model.js';
+
 dotenv.config();
 
 const app = express();
@@ -13,8 +14,8 @@ const server = http.createServer(app);
 const prisma = new PrismaClient();
 
 mongoose
-    // .connect(`mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_NAME}?authSource=admin`)
-    .connect(process.env.MONGO_URI)
+    .connect(`mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_NAME}?authSource=admin`)
+    // .connect(process.env.MONGO_URI)
     .then(() => {
         console.log("MongoDB connected!");
     })
@@ -57,7 +58,6 @@ io.on('connection', (socket) => {
     usersSocketIds[userId] = socket.id;
     console.log(`User ${userId} connected with socket ID ${socket.id}`);
     console.log(usersSocketIds)
-
     socket.on('disconnect', () => {
         delete usersSocketIds[userId];
         console.log(`User ${userId} disconnected`);
@@ -70,9 +70,8 @@ io.on('connection', (socket) => {
                 participants,
                 messages: [],
             });
-            await newConversation.save();
-            console.log('conv created');
-
+            newConversation.save()
+            console.log('conv created')
             participants.forEach(participantId => {
                 const pid = participantId.toString();
                 if (usersSocketIds[pid]) {
@@ -85,6 +84,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('new_message', async (data) => {
+        console.log(data)
         const { conversationId, message, pictureUrl, videoUrl } = data;
         const author = socket.user.id;
 
@@ -113,36 +113,17 @@ io.on('connection', (socket) => {
             conversation.messages.push(newMessage);
             await conversation.save();
 
-            const userIds = conversation.participants;
+            const userIds = conversation.participants
 
-            for (const uid of userIds) {
+            userIds.forEach(uid => {
                 if (usersSocketIds[uid]) {
+                    console.log('send message')
                     io.to(usersSocketIds[uid]).emit('message', {
                         conversationId,
                         message: newMessage
                     });
-
-                    const notification = {
-                        title: 'New message',
-                        body: 'There is a new message',
-                        url: process.env.API_URI + '/conversation',
-                        userId: uid
-                    };
-
-                    try {
-                        await fetch(process.env.API_URI + '/send-to-user', {
-                            method: "POST",
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${socket.handshake.headers['authorization']}`
-                            },
-                            body: JSON.stringify(notification)
-                        });
-                    } catch (fetchError) {
-                        console.error('Error sending notification:', fetchError.message);
-                    }
                 }
-            }
+            });
         } catch (err) {
             console.error('Error handling message:', err.message);
         }

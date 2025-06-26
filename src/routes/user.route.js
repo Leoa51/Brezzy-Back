@@ -20,7 +20,10 @@ import {
     blockUser,
     unblockUser,
     updateProfilePicture,
-    getIsFollowing
+    getIsFollowing,
+    getReportedUser,
+    getBannedUser,
+    reportUser,
 } from '../controllers/user.controller.js'
 
 import { body, param } from 'express-validator';
@@ -43,7 +46,11 @@ const upload = multer({
     }
 });
 
+userRouter.get('/reportedUser', getReportedUser)
+
 userRouter.get('/me', getMe)
+
+userRouter.get('/bannedUser', getBannedUser)
 
 userRouter.post('/', body('username').isString(), body('name').isString().notEmpty(), body('firstName').isString().notEmpty(), body('email').isEmail().notEmpty(), body('password').isStrongPassword().notEmpty(), body('bio').isString(), body('language').isString().notEmpty(), createUser);
 
@@ -72,6 +79,10 @@ userRouter.patch('/:id', param('id').custom(value => isCuid(value)), modifyUser)
 userRouter.delete('/:id', param('id').custom(value => isCuid(value)), deleteUser);
 
 userRouter.get('/user-messages/:id', getUserMessages);
+
+userRouter.post('/:id/report', [
+    param('id').isString().notEmpty().withMessage('userId is required'), body('reason').optional().isString().withMessage('Reason must be a string')
+], reportUser);
 
 userRouter.post('/block', blockUser);
 
