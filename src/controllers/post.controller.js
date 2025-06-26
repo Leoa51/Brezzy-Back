@@ -648,7 +648,7 @@ export async function likePost(req, res) {
     try {
         const post = await prisma.post.findUnique({
             where: { id: postId },
-            include: { author: true }
+            // include: { author: true }
         });
 
         if (!post) {
@@ -717,24 +717,24 @@ export async function likePost(req, res) {
                 like_Number: likeCount
             });
 
-            if (post.author.id !== req.user.id && actionPerformed) {
-                try {
-                    const notificationBody = {
-                        title: 'New Like',
-                        body: `${userExists.username || 'Someone'} liked your post`,
-                        userId: post.author.id,
-                        url: `/post/${postId}`
-                    };
-
-                    await fetch(process.env.API_URI + `/api/notifications/send-to-user`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': req.headers.authorization },
-                        body: JSON.stringify(notificationBody)
-                    });
-                } catch (notificationError) {
-                    console.error("Error sending notification:", notificationError);
-                }
-            }
+            // if (post.author.id !== req.user.id && actionPerformed) {
+            //     try {
+            //         const notificationBody = {
+            //             title: 'New Like',
+            //             body: `${userExists.username || 'Someone'} liked your post`,
+            //             userId: post.author.id,
+            //             url: `/post/${postId}`
+            //         };
+            //
+            //         await fetch(process.env.API_URI + `/api/notifications/send-to-user`, {
+            //             method: 'POST',
+            //             headers: { 'Content-Type': 'application/json', 'Authorization': req.headers.authorization },
+            //             body: JSON.stringify(notificationBody)
+            //         });
+            //     } catch (notificationError) {
+            //         console.error("Error sending notification:", notificationError);
+            //     }
+            // }
         }
     } catch (err) {
         console.error("Error toggling like:", err);
