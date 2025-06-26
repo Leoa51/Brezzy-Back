@@ -22,43 +22,43 @@ breezy-api.panini.simon511000.fr {
         respond 204
     }
 
-    handle_path /api/media/* {
+    handle_path /api/media* {
         reverse_proxy minio:9001 {
             header_up Host {upstream_hostport}
         }
     }
     
-    handle_path /api/auth/* {
+    handle_path /api/auth* {
         reverse_proxy api-auth:3000 {
             header_up Host {upstream_hostport}
         }
     }
     
-    handle_path /api/posts/* {
+    handle /api/posts* {
         reverse_proxy api-posts:3000 {
             header_up Host {upstream_hostport}
         }
     }
     
-    handle_path /api/users/* {
+    handle_path /api/users* {
         reverse_proxy api-users:3000 {
             header_up Host {upstream_hostport}
         }
     }
     
-    handle_path /api/conversations/* {
+    handle_path /api/conversations* {
         reverse_proxy api-websocket:3000 {
             header_up Host {upstream_hostport}
         }
     }
     
-    handle_path /api/admin/* {
+    handle_path /api/admin* {
         reverse_proxy api-admin:3000 {
             header_up Host {upstream_hostport}
         }
     }
     
-    handle_path /api/tags/* {
+    handle_path /api/tags* {
         reverse_proxy api-tags:3000 {
             header_up Host {upstream_hostport}
         }
