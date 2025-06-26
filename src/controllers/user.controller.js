@@ -1109,7 +1109,6 @@ export async function reportUser(req, res) {
     }
 
     try {
-        // Vérifier que l'utilisateur à signaler existe
         const reportedUser = await prisma.user_.findUnique({
             where: { id: reportedId }
         });
@@ -1130,7 +1129,6 @@ export async function reportUser(req, res) {
             });
         }
 
-        // Vérifier si un signalement existe déjà
         const existingReport = await prisma.reportUser.findUnique({
             where: {
                 reportedId_reporterId: {
@@ -1146,7 +1144,7 @@ export async function reportUser(req, res) {
             });
         }
 
-        // Créer le nouveau signalement
+
         await prisma.reportUser.create({
             data: {
                 reportedId: reportedId,
@@ -1173,7 +1171,6 @@ export async function getMe(req, res) {
     if (!errors.isEmpty()) {
         return res.status(422).json({ errors: errors.array() });
     }
-
     try {
         const user = await prisma.user_.findUnique({
             where: { id: req.user.id },
@@ -1208,8 +1205,6 @@ export async function getMe(req, res) {
         });
     }
 }
-
-
 
 export async function updateProfilePicture(req, res) {
     const errors = validationResult(req);

@@ -20,13 +20,37 @@ export default async function register(req, res) {
     const { username, email, password, name, firstName, bio, language, } = req.body;
 
     try {
+
+        const existingUserByEmail = await prisma.user_.findUnique({
+            where: { email: email }
+        });
+
+        if (existingUserByEmail) {
+            return res.status(409).json({
+                message: 'Email already registered',
+                field: 'email'
+            });
+        }
+
+        const existingUserByUsername = await prisma.user_.findUnique({
+            where: { username: username }
+        });
+
+        if (existingUserByUsername) {
+            return res.status(409).json({
+                message: 'Username already used',
+                field: 'username'
+            });
+        }
+
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = await prisma.user_.create({ data: { username, email, name, bio, language, passwordHash: hashedPassword, firstName: firstName } });
         const mailOptions = {
             from: process.env.SMTP_MAIL,
             to: email,
             subject: 'Verify your email',
-            text: `hello please click on the following link to verify your email https://breezy-api.panini.simon511000.fr/api/user/verify-user/${user.id}`
+            text: `hello please click on the following link to verify your email https://breezy-api.panini.simon511000.fr/api/auth/verify-user/${user.id}`
         };
         transporter.sendMail(mailOptions, (error, info) => {
             if (error) {

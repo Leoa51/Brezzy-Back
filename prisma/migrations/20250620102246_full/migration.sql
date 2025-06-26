@@ -1,6 +1,3 @@
--- CreateEnum
-CREATE TYPE "Role" AS ENUM ('adminstrator', 'moderator', 'user');
-
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
@@ -13,11 +10,9 @@ CREATE TABLE "User" (
     "ppPath" TEXT,
     "username" TEXT NOT NULL,
     "language" TEXT,
-    "role" "Role" NOT NULL DEFAULT 'user',
     "is_blocked" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
-    "isValidated" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );

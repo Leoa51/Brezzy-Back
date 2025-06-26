@@ -25,25 +25,27 @@ app.use(express.json());
 
 switch (process.env.SERVICE) {
   case 'tags':
-    app.use('/', authMiddleware, tagsRouter);
+    app.use('/api/tags', authMiddleware, tagsRouter);
     break;
   case 'users':
-    app.use('/', authMiddleware, usersRouter);
+    app.use('/api/users', authMiddleware, usersRouter);
   case 'posts':
-    app.use('/', authMiddleware, postsRouter);
+    app.use('/api/posts', authMiddleware, postsRouter);
   case 'chat':
-    app.use('/', authMiddleware, conversationRouter);
+    app.use('/api/conversations', authMiddleware, conversationRouter);
   case 'auth':
-    app.use('/', authRouter)
+    app.use('/api/auth', authRouter)
   case 'media':
-    app.use('/', authMiddleware, minioRouter);
+    app.use('/api/media', authMiddleware, minioRouter);
   case 'notifications':
-    app.use('/', authMiddleware, notificationsRouter);
+    app.use('/api/notifications', authMiddleware, notificationsRouter);
   default:
+
     app.use(cors({
       origin: '*',
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     }));
+
     app.use('/api/auth', authRouter)
     app.use('/api/conversations', authMiddleware, conversationRouter);
     app.use('/api/posts', authMiddleware, postsRouter);
@@ -51,7 +53,6 @@ switch (process.env.SERVICE) {
     app.use('/api/tags', authMiddleware, tagsRouter);
     app.use('/api/media', authMiddleware, minioRouter);
     app.use('/api/notifications', authMiddleware, notificationsRouter);
-
     break;
 }
 
