@@ -40,6 +40,12 @@ switch (process.env.SERVICE) {
   case 'notifications':
     app.use('/api/notifications', authMiddleware, notificationsRouter);
   default:
+
+    app.use(cors({
+      origin: '*',
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    }));
+
     app.use('/api/auth', authRouter)
     app.use('/api/conversations', authMiddleware, conversationRouter);
     app.use('/api/posts', authMiddleware, postsRouter);
