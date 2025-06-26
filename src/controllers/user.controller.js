@@ -1062,7 +1062,6 @@ export async function getMe(req, res) {
     if (!errors.isEmpty()) {
         return res.status(422).json({ errors: errors.array() });
     }
-
     try {
         const user = await prisma.user_.findUnique({
             where: { id: req.user.id },

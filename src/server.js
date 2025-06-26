@@ -26,10 +26,7 @@ mongoose
 const usersSocketIds = {};
 
 const io = new Server(server, {
-    cors: {
-        origin: '*',
-        methods: ['GET', 'POST'],
-    },
+    path: '/ws'
 });
 
 io.use(async (socket, next) => {
@@ -130,6 +127,6 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(3101, () => {
-    console.log(`Server is running on port 3101`);
+server.listen(3000, () => {
+    console.log(`Server is running on port 3000`);
 });

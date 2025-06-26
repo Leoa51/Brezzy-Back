@@ -50,7 +50,7 @@ export default async function register(req, res) {
             from: process.env.SMTP_MAIL,
             to: email,
             subject: 'Verify your email',
-            text: `hello please click on the following link to verify your email https://breezy-api.panini.simon511000.fr/api/user/verify-user/${user.id}`
+            text: `hello please click on the following link to verify your email https://breezy-api.panini.simon511000.fr/api/auth/verify-user/${user.id}`
         };
         transporter.sendMail(mailOptions, (error, info) => {
             if (error) {
