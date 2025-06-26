@@ -28,9 +28,12 @@ const usersSocketIds = {};
 const io = new Server(server, {
     path: '/ws',
     cors: {
-        origin: '*',
-        methods: ['GET', 'POST'],
-    }
+        origin: "*",
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+        credentials: true
+    },
+    allowEIO3: true
 });
 
 io.use(async (socket, next) => {
