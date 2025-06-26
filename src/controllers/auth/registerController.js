@@ -20,6 +20,30 @@ export default async function register(req, res) {
     const { username, email, password, name, firstName, bio, language, } = req.body;
 
     try {
+
+        const existingUserByEmail = await prisma.user_.findUnique({
+            where: { email: email }
+        });
+
+        if (existingUserByEmail) {
+            return res.status(409).json({
+                message: 'Email already registered',
+                field: 'email'
+            });
+        }
+
+        const existingUserByUsername = await prisma.user_.findUnique({
+            where: { username: username }
+        });
+
+        if (existingUserByUsername) {
+            return res.status(409).json({
+                message: 'Username already used',
+                field: 'username'
+            });
+        }
+
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = await prisma.user_.create({ data: { username, email, name, bio, language, passwordHash: hashedPassword, firstName: firstName } });
         const mailOptions = {
