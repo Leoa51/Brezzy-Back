@@ -25,7 +25,9 @@ mongoose
 
 const usersSocketIds = {};
 
-const io = new Server(server);
+const io = new Server(server, {
+    path: '/ws'
+});
 
 io.use(async (socket, next) => {
     try {

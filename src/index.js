@@ -47,7 +47,6 @@ switch (process.env.SERVICE) {
     app.use('/api/tags', authMiddleware, tagsRouter);
     app.use('/api/media', authMiddleware, minioRouter);
     app.use('/api/notifications', authMiddleware, notificationsRouter);
-
     break;
 }
 
