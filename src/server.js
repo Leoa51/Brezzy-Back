@@ -27,7 +27,7 @@ const usersSocketIds = {};
 
 const io = new Server(server, {
     cors: {
-        origin: "*",
+        origin: "breezy.panini.simon511000.fr",
         methods: ["GET", "POST"],
         allowedHeaders: ["authorization"],
     },
