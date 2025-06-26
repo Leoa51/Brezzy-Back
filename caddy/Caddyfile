@@ -11,17 +11,6 @@
 }
 
 :80, localhost:80 {
-    # CORS preflight
-    @options method OPTIONS
-    handle @options {
-        header {
-            Access-Control-Allow-Origin "*"
-            Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS"
-            Access-Control-Allow-Headers "Content-Type, Authorization"
-            Access-Control-Max-Age "86400"
-        }
-        respond 204
-    }
 
     # REST Endpoints
     handle /api/conversations* {
@@ -60,22 +49,9 @@
         }
     }
 
-    # WebSocket Endpoints (chat + socket.io) ✅
-    @websocket {
-        header Connection *Upgrade*
-        header Upgrade websocket
-    }
-    handle @websocket {
-        reverse_proxy api-websocket:3000 {
-            header_up Host {upstream_hostport}
-            header_up Connection {>Connection}
-            header_up Upgrade {>Upgrade}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
-            header_up X-Real-IP {remote_host}
-        }
-    }
-
+   handle /socket.io/* {
+        reverse_proxy api-websocket:3000
+   }
     # Fallback
     handle {
         respond "Not Found" 404
@@ -83,7 +59,7 @@
 
     # Global CORS
     header {
-        Access-Control-Allow-Origin "*"
+        Access-Control-Allow-Origin "https://breezy.panini.simon511000.fr"
         Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS"
         Access-Control-Allow-Headers "Content-Type, Authorization"
     }

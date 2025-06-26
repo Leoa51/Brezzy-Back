@@ -26,11 +26,6 @@ mongoose
 const usersSocketIds = {};
 
 const io = new Server(server, {
-    cors: {
-        origin: "breezy.panini.simon511000.fr",
-        methods: ["GET", "POST"],
-        allowedHeaders: ["authorization"],
-    },
 });
 
 io.use(async (socket, next) => {
