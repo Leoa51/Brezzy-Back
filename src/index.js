@@ -6,7 +6,7 @@ import authMiddleware from './middleware/authMiddleware.js';
 import { authRouter } from './routes/auth.route.js';
 import minioRouter from './routes/minio.route.js';
 import nodemailer from 'nodemailer'
-
+import isBannedMiddleware from '../middleware/isBannedMiddleware.js'
 
 dotenv.config();
 
@@ -25,20 +25,20 @@ app.use(express.json());
 
 switch (process.env.SERVICE) {
   case 'tags':
-    app.use('/api/tags', authMiddleware, tagsRouter);
+    app.use('/api/tags', authMiddleware, isBannedMiddleware, tagsRouter);
     break;
   case 'users':
-    app.use('/api/users', authMiddleware, usersRouter);
+    app.use('/api/users', authMiddleware, isBannedMiddleware, usersRouter);
   case 'posts':
-    app.use('/api/posts', authMiddleware, postsRouter);
+    app.use('/api/posts', authMiddleware, isBannedMiddleware, postsRouter);
   case 'chat':
-    app.use('/api/conversations', authMiddleware, conversationRouter);
+    app.use('/api/conversations', authMiddleware, isBannedMiddleware, conversationRouter);
   case 'auth':
     app.use('/api/auth', authRouter)
   case 'media':
-    app.use('/api/media', authMiddleware, minioRouter);
+    app.use('/api/media', authMiddleware, isBannedMiddleware, minioRouter);
   case 'notifications':
-    app.use('/api/notifications', authMiddleware, notificationsRouter);
+    app.use('/api/notifications', authMiddleware, isBannedMiddleware, notificationsRouter);
   default:
 
     app.use(cors({

@@ -4,7 +4,7 @@ import register from '../controllers/auth/registerController.js';
 import login from '../controllers/auth/loginController.js';
 import { isAuthenticated } from "../controllers/auth/authController.js";
 import { verifyUser } from '../controllers/auth/authController.js';
-
+import isBannedMiddleware from '../middleware/isBannedMiddleware.js'
 export const authRouter = express.Router();
 
 authRouter.post('/register',

@@ -280,7 +280,7 @@ export async function getAllPosts(req, res) {
 
         const where = {
             thisIsComment: null,
-            user: {isBlocked: false},
+            user: { isBlocked: false },
         };
 
         if (keyword) {
@@ -555,7 +555,11 @@ export async function deletePost(req, res) {
             });
         }
 
-        if (post.author !== req.user.id) {
+        const userRole = req.user.role;
+        const isOwner = post.author === req.user.id;
+        const isAdminOrModerator = ['admin', 'moderator'].includes(userRole);
+
+        if (!isOwner && !isAdminOrModerator) {
             return res.status(403).json({
                 error: "You can only delete your own posts"
             });
@@ -576,7 +580,6 @@ export async function deletePost(req, res) {
         });
     }
 }
-
 export async function modifyPost(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

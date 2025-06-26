@@ -29,7 +29,7 @@ import {
 import { body, param } from 'express-validator';
 import multer from "multer";
 import path from "path";
-
+import roleMiddleware from '../middleware/roleMiddleware.js'
 const storage = multer.memoryStorage();
 const upload = multer({
     storage,
@@ -46,11 +46,11 @@ const upload = multer({
     }
 });
 
-userRouter.get('/reportedUser', getReportedUser)
+userRouter.get('/reportedUser', roleMiddleware(['adminstrator', 'moderator']), getReportedUser)
 
 userRouter.get('/me', getMe)
 
-userRouter.get('/bannedUser', getBannedUser)
+userRouter.get('/bannedUser', roleMiddleware(['adminstrator', 'moderator']), getBannedUser)
 
 userRouter.post('/', body('username').isString(), body('name').isString().notEmpty(), body('firstName').isString().notEmpty(), body('email').isEmail().notEmpty(), body('password').isStrongPassword().notEmpty(), body('bio').isString(), body('language').isString().notEmpty(), createUser);
 
@@ -58,7 +58,7 @@ userRouter.get('/', getAllUsers);
 
 userRouter.get('/by-username/:username', param('username').isString().notEmpty(), getUserByUsername);
 
-userRouter.patch('/:id/toggle-block', param('id').custom(value => isCuid(value)), toggleBlockUser);
+userRouter.patch('/:id/toggle-block', ['adminstrator', 'moderator'], param('id').custom(value => isCuid(value)), toggleBlockUser);
 
 userRouter.post('/toggle-follow', toggleFollowUser);
 
@@ -84,9 +84,9 @@ userRouter.post('/:id/report', [
     param('id').isString().notEmpty().withMessage('userId is required'), body('reason').optional().isString().withMessage('Reason must be a string')
 ], reportUser);
 
-userRouter.post('/block', blockUser);
+userRouter.post('/block', ['adminstrator', 'moderator'], blockUser);
 
-userRouter.post('/unblock', unblockUser);
+userRouter.post('/unblock', ['adminstrator', 'moderator'], unblockUser);
 
 userRouter.put('/profile-picture', upload.single('profilePicture'), updateProfilePicture);
 

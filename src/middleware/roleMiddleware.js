@@ -1,4 +1,8 @@
-export default roleMiddleware = (requiredRole) => (req, res, next) => {
-    if (req.user.role !== requiredRole) return res.status(403).json({ message: 'Access forbidden' });
+const roleMiddleware = (requiredRoles) => (req, res, next) => {
+    if (!requiredRoles.includes(req.user.role)) {
+        return res.status(403).json({ message: 'Access forbidden' });
+    }
     next();
 };
+
+export default roleMiddleware;
